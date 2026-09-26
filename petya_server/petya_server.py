@@ -45,7 +45,7 @@ OLLAMA_MODEL = "qwen2.5:7b"      # 7B - llama3.2 (3B) слишком часто 
                                   # надёжнее держит русский язык и инструкции, но и медленнее
                                   # (на 16 ГБ без видеокарты ждите десятки секунд на ответ)
 WHISPER_MODEL_SIZE = "small"     # base/small/medium - больше = точнее, но медленнее
-PIPER_VOICE = os.path.join(os.path.dirname(__file__), "ru_RU-denis-medium.onnx")
+PIPER_VOICE = os.path.join(os.path.dirname(__file__), "ru_RU-ruslan-medium.onnx")
 # ---------------------------
 
 app = Flask(__name__)
