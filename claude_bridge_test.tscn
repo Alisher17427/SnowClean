@@ -1,0 +1,5 @@
+[gd_scene format=3]
+
+[node name="root" type="Node2D" unique_id=2090169440]
+
+[node name="TestLabel" type="Label" parent="." unique_id=1440640322]

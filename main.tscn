@@ -1,0 +1,736 @@
+[gd_scene format=3 uid="uid://cafo11jblajgm"]
+
+[ext_resource type="Script" uid="uid://do2hg7dxp4583" path="res://snow_mask_viewport.gd" id="2_0xm2m"]
+[ext_resource type="Shader" uid="uid://6xusc8ul5y5t" path="res://main.gdshader" id="2_h2yge"]
+[ext_resource type="Script" uid="uid://bvlibi43xw0cu" path="res://snow_trample_viewport.gd" id="3_trample"]
+[ext_resource type="Script" uid="uid://cif64858rao1j" path="res://main.gd" id="4_main"]
+[ext_resource type="Script" uid="uid://b6e45vmyqu20v" path="res://snow_sync.gd" id="5_sync"]
+[ext_resource type="PackedScene" path="res://models/Elka.tscn" id="6_7mycd"]
+[ext_resource type="PackedScene" path="res://models/Rock_1.tscn" id="7_efxa6"]
+[ext_resource type="PackedScene" path="res://models/Rock_3.tscn" id="8_dg77c"]
+[ext_resource type="PackedScene" path="res://models/Tree_2Snow.tscn" id="9_ycdy4"]
+[ext_resource type="PackedScene" path="res://models/Tree_3Snow.tscn" id="10_w48qg"]
+[ext_resource type="PackedScene" path="res://models/TreeWinter.tscn" id="11_vivmo"]
+[ext_resource type="Script" uid="uid://7xvpuffhgvws" path="res://fireplace_visual.gd" id="12_fire"]
+[ext_resource type="ArrayMesh" uid="uid://deiqdr51ct35a" path="res://models/axe/12351_Axe_v3_l3.obj" id="13_axe"]
+[ext_resource type="Script" path="res://petya.gd" id="14_petya"]
+[ext_resource type="Script" path="res://clouds.gd" id="15_clouds"]
+[ext_resource type="Script" path="res://mountains.gd" id="16_mountains"]
+[ext_resource type="Script" path="res://day_night.gd" id="17_daynight"]
+[ext_resource type="Script" path="res://torch.gd" id="18_torch"]
+[ext_resource type="Script" path="res://tree_wind.gd" id="19_wind"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sun"]
+sky_top_color = Color(0.33, 0.5, 0.78, 1)
+sky_horizon_color = Color(0.78, 0.85, 0.92, 1)
+ground_bottom_color = Color(0.65, 0.67, 0.7, 1)
+ground_horizon_color = Color(0.78, 0.85, 0.92, 1)
+
+[sub_resource type="Sky" id="Sky_sun"]
+sky_material = SubResource("ProceduralSkyMaterial_sun")
+
+[sub_resource type="Environment" id="Environment_sun"]
+background_mode = 2
+sky = SubResource("Sky_sun")
+tonemap_mode = 2
+ssao_enabled = true
+ssao_intensity = 1.0
+glow_enabled = true
+glow_intensity = 0.5
+glow_bloom = 0.05
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ntbkr"]
+size = Vector3(64, 0.2, 64)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rub7e"]
+size = Vector3(64, 0.2, 64)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_rub7e"]
+size = Vector2(64, 64)
+subdivide_width = 960
+subdivide_depth = 960
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_7mycd"]
+viewport_path = NodePath("SnowMaskViewport")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_trample"]
+viewport_path = NodePath("SnowTrampleViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_h2yge"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("2_h2yge")
+shader_parameter/snow_mask = SubResource("ViewportTexture_7mycd")
+shader_parameter/snow_trample = SubResource("ViewportTexture_trample")
+shader_parameter/ground_depth = 0.9
+shader_parameter/min_thickness = 0.4
+shader_parameter/noise_scale = 12.0
+shader_parameter/clear_max = 0.85
+shader_parameter/press_depth = 0.2
+shader_parameter/snow_color = Color(1, 1, 1, 1)
+shader_parameter/thin_snow_color = Color(0.82, 0.87, 0.93, 1)
+shader_parameter/trampled_color = Color(0.75, 0.8, 0.85, 1)
+shader_parameter/ground_color = Color(0.35, 0.25, 0.15, 1)
+shader_parameter/ground_print_color = Color(0.18, 0.12, 0.07, 1)
+shader_parameter/ground_press = 0.05
+
+[sub_resource type="Gradient" id="Gradient_h2yge"]
+offsets = PackedFloat32Array(0.4919355, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.95686275, 0.95686275, 0.95686275, 0.007843138)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_rub7e"]
+gradient = SubResource("Gradient_h2yge")
+width = 84
+height = 84
+fill = 1
+fill_from = Vector2(0.2, 0.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_log"]
+albedo_color = Color(0.45, 0.3, 0.15, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_roof"]
+albedo_color = Color(0.28, 0.16, 0.08, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chimney"]
+albedo_color = Color(0.4, 0.38, 0.37, 1)
+roughness = 1.0
+
+
+[sub_resource type="QuadMesh" id="QuadMesh_dropzone"]
+size = Vector2(0.7, 0.7)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dropzone"]
+shading_mode = 0
+transparency = 1
+albedo_color = Color(0.9, 0.15, 0.1, 0.75)
+
+[node name="Main" type="Node3D" unique_id=780172330]
+script = ExtResource("4_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=302749095]
+environment = SubResource("Environment_sun")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1580534933]
+transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 0, 0)
+light_color = Color(1, 0.97, 0.9, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="DayNight" type="Node3D" parent="." unique_id=300100070]
+script = ExtResource("17_daynight")
+
+[node name="Clouds" type="Node3D" parent="." unique_id=300100060]
+script = ExtResource("15_clouds")
+
+[node name="Mountains" type="Node3D" parent="." unique_id=300100061]
+script = ExtResource("16_mountains")
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=229131165]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=915979065]
+visible = false
+shape = SubResource("BoxShape3D_ntbkr")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1762325533]
+visible = false
+mesh = SubResource("BoxMesh_rub7e")
+
+[node name="PlayerSpawn" type="Marker3D" parent="." unique_id=949498660]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -2.906)
+
+[node name="UI" type="Control" parent="." unique_id=92107163]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="UI" unique_id=1636980327]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 32
+text = "+"
+
+[node name="SnowField" type="MeshInstance3D" parent="." unique_id=920623023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("PlaneMesh_rub7e")
+surface_material_override/0 = SubResource("ShaderMaterial_h2yge")
+
+[node name="SnowMaskViewport" type="SubViewport" parent="." unique_id=1899861179]
+transparent_bg = true
+use_hdr_2d = true
+size = Vector2i(1024, 1024)
+render_target_clear_mode = 1
+script = ExtResource("2_0xm2m")
+
+[node name="ClearBrush" type="Sprite2D" parent="SnowMaskViewport" unique_id=798909288]
+modulate = Color(1, 1, 1, 0.5)
+texture = SubResource("GradientTexture2D_rub7e")
+
+[node name="SnowTrampleViewport" type="SubViewport" parent="." unique_id=724928543]
+transparent_bg = true
+size = Vector2i(2048, 2048)
+render_target_clear_mode = 1
+script = ExtResource("3_trample")
+
+[node name="Players" type="Node3D" parent="." unique_id=1046500672]
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="." unique_id=612223420]
+spawn_path = NodePath("../Players")
+
+[node name="Chickens" type="Node3D" parent="." unique_id=300100040]
+
+[node name="ChickenSpawner" type="MultiplayerSpawner" parent="." unique_id=300100041]
+spawn_path = NodePath("../Chickens")
+
+[node name="SnowSync" type="Node" parent="." unique_id=676007772]
+script = ExtResource("5_sync")
+
+[node name="Forest" parent="." unique_id=1867360681 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 2.220446e-16, 1, 0, -1, 2.220446e-16, 16.286678, 3.1703444, 20.067883)
+script = ExtResource("19_wind")
+
+[node name="Forest3" parent="Forest" unique_id=87989318 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.71781, 0, 0)
+script = ExtResource("19_wind")
+
+[node name="Forest4" parent="Forest" unique_id=1587378634 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.71781, 4.249487, 0)
+script = ExtResource("19_wind")
+
+[node name="Forest5" parent="Forest" unique_id=1205128901 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.208, 6, 0.1)
+script = ExtResource("19_wind")
+
+[node name="Forest2" parent="Forest" unique_id=1755887188 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0903931, 30.231525, 0)
+script = ExtResource("19_wind")
+
+[node name="Forest6" parent="Forest" unique_id=1968128253 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5560875, 25.651915, 0)
+script = ExtResource("19_wind")
+
+[node name="Forest7" parent="Forest" unique_id=1560723156 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.900673, 27.633995, 0)
+script = ExtResource("19_wind")
+
+[node name="Rock_1" parent="Forest" unique_id=1201458398 instance=ExtResource("7_efxa6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.225887, 17.260778, 0.23194122)
+
+[node name="Rock_3" parent="Forest" unique_id=760445676 instance=ExtResource("8_dg77c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.175848, 9.476192, 0.16428399)
+
+[node name="Tree_2Snow" parent="Forest" unique_id=544422082 instance=ExtResource("9_ycdy4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.52336, 17.386389, -0.84556293)
+script = ExtResource("19_wind")
+
+[node name="Tree_3Snow" parent="Forest" unique_id=321758495 instance=ExtResource("10_w48qg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.967632, 51.53922, -0.2938168)
+script = ExtResource("19_wind")
+
+[node name="TreeWinter" parent="Forest" unique_id=416109398 instance=ExtResource("11_vivmo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.633923, 39.240993, -0.9214668)
+script = ExtResource("19_wind")
+
+[node name="FarDecor1" parent="." unique_id=348783756 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 26, 0, 18)
+script = ExtResource("19_wind")
+
+[node name="FarDecor2" parent="." unique_id=660878519 instance=ExtResource("9_ycdy4")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -24, 0, 22)
+script = ExtResource("19_wind")
+
+[node name="FarDecor3" parent="." unique_id=1963466703 instance=ExtResource("11_vivmo")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 20, 0, -26)
+script = ExtResource("19_wind")
+
+[node name="FarDecor4" parent="." unique_id=366423731 instance=ExtResource("10_w48qg")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -22, 0, -20)
+script = ExtResource("19_wind")
+
+[node name="FarDecor5" parent="." unique_id=2028534874 instance=ExtResource("7_efxa6")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 28, 0, -4)
+
+[node name="FarDecor6" parent="." unique_id=1603724359 instance=ExtResource("8_dg77c")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -28, 0, 6)
+
+[node name="FarDecor7" parent="." unique_id=1292188882 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 10, 0, 28)
+script = ExtResource("19_wind")
+
+[node name="FarDecor8" parent="." unique_id=960924307 instance=ExtResource("9_ycdy4")]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -10, 0, -28)
+script = ExtResource("19_wind")
+
+[node name="House" type="Node3D" parent="." unique_id=300100001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+
+[node name="LogSouthF3" type="CSGCylinder3D" parent="House" unique_id=1700001002]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, -1.0, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEastF3" type="CSGCylinder3D" parent="House" unique_id=1700001003]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -1.0, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWestF3" type="CSGCylinder3D" parent="House" unique_id=1700001004]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -1.0, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthLF3" type="CSGCylinder3D" parent="House" unique_id=1700001005]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, -1.0, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthRF3" type="CSGCylinder3D" parent="House" unique_id=1700001006]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, -1.0, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouthF2" type="CSGCylinder3D" parent="House" unique_id=1700001007]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, -0.6, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEastF2" type="CSGCylinder3D" parent="House" unique_id=1700001008]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.6, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWestF2" type="CSGCylinder3D" parent="House" unique_id=1700001009]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.6, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthLF2" type="CSGCylinder3D" parent="House" unique_id=1700001010]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, -0.6, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthRF2" type="CSGCylinder3D" parent="House" unique_id=1700001011]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, -0.6, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouthF1" type="CSGCylinder3D" parent="House" unique_id=1700001012]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, -0.2, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEastF1" type="CSGCylinder3D" parent="House" unique_id=1700001013]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.2, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWestF1" type="CSGCylinder3D" parent="House" unique_id=1700001014]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.2, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthLF1" type="CSGCylinder3D" parent="House" unique_id=1700001015]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, -0.2, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthRF1" type="CSGCylinder3D" parent="House" unique_id=1700001016]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, -0.2, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouth0" type="CSGCylinder3D" parent="House" unique_id=1700001017]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 0.2, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEast0" type="CSGCylinder3D" parent="House" unique_id=1700001018]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.2, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWest0" type="CSGCylinder3D" parent="House" unique_id=1700001019]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.2, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthL0" type="CSGCylinder3D" parent="House" unique_id=1700001020]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 0.2, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthR0" type="CSGCylinder3D" parent="House" unique_id=1700001021]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 0.2, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouth1" type="CSGCylinder3D" parent="House" unique_id=1700001022]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 0.6, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEast1" type="CSGCylinder3D" parent="House" unique_id=1700001023]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.6, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWest1" type="CSGCylinder3D" parent="House" unique_id=1700001024]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.6, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthL1" type="CSGCylinder3D" parent="House" unique_id=1700001025]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 0.6, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthR1" type="CSGCylinder3D" parent="House" unique_id=1700001026]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 0.6, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouth2" type="CSGCylinder3D" parent="House" unique_id=1700001027]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 1.0, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEast2" type="CSGCylinder3D" parent="House" unique_id=1700001028]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.0, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWest2" type="CSGCylinder3D" parent="House" unique_id=1700001029]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.0, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthL2" type="CSGCylinder3D" parent="House" unique_id=1700001030]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 1.0, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthR2" type="CSGCylinder3D" parent="House" unique_id=1700001031]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 1.0, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouth3" type="CSGCylinder3D" parent="House" unique_id=1700001032]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 1.4, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEast3" type="CSGCylinder3D" parent="House" unique_id=1700001033]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.4, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWest3" type="CSGCylinder3D" parent="House" unique_id=1700001034]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.4, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthL3" type="CSGCylinder3D" parent="House" unique_id=1700001035]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 1.4, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthR3" type="CSGCylinder3D" parent="House" unique_id=1700001036]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 1.4, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouth4" type="CSGCylinder3D" parent="House" unique_id=1700001037]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 1.8, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEast4" type="CSGCylinder3D" parent="House" unique_id=1700001038]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.8, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWest4" type="CSGCylinder3D" parent="House" unique_id=1700001039]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.8, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorthL4" type="CSGCylinder3D" parent="House" unique_id=1700001040]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 1.8, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogNorthR4" type="CSGCylinder3D" parent="House" unique_id=1700001041]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 1.8, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 2.05
+sides = 8
+
+[node name="LogSouth5" type="CSGCylinder3D" parent="House" unique_id=1700001042]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.2, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEast5" type="CSGCylinder3D" parent="House" unique_id=1700001043]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.2, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWest5" type="CSGCylinder3D" parent="House" unique_id=1700001044]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.2, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorth5" type="CSGCylinder3D" parent="House" unique_id=1700001045]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.2, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogSouth6" type="CSGCylinder3D" parent="House" unique_id=1700001046]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.6, -2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogEast6" type="CSGCylinder3D" parent="House" unique_id=1700001047]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.6, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogWest6" type="CSGCylinder3D" parent="House" unique_id=1700001048]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.6, 0.0)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="LogNorth6" type="CSGCylinder3D" parent="House" unique_id=1700001049]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.6, 2.5)
+material = SubResource("StandardMaterial3D_log")
+use_collision = true
+radius = 0.2
+height = 5.4
+sides = 8
+
+[node name="RoofTier0" type="CSGBox3D" parent="House" unique_id=1700001051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.95, 0)
+material = SubResource("StandardMaterial3D_roof")
+use_collision = true
+size = Vector3(5.8, 0.3, 5.8)
+
+[node name="RoofTier1" type="CSGBox3D" parent="House" unique_id=1700001052]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
+material = SubResource("StandardMaterial3D_roof")
+use_collision = true
+size = Vector3(4.4, 0.3, 4.4)
+
+[node name="RoofTier2" type="CSGBox3D" parent="House" unique_id=1700001053]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.55, 0)
+material = SubResource("StandardMaterial3D_roof")
+use_collision = true
+size = Vector3(3.0, 0.3, 3.0)
+
+[node name="RoofTier3" type="CSGBox3D" parent="House" unique_id=1700001054]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.85, 0)
+material = SubResource("StandardMaterial3D_roof")
+use_collision = true
+size = Vector3(1.6, 0.3, 1.6)
+
+[node name="Petya" type="Node3D" parent="." unique_id=300100050]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 0, -1.2)
+script = ExtResource("14_petya")
+
+[node name="DropZone" type="MeshInstance3D" parent="Petya" unique_id=300100051]
+position = Vector3(-0.9, 0.02, 0.3)
+rotation_degrees = Vector3(-90, 0, 0)
+mesh = SubResource("QuadMesh_dropzone")
+surface_material_override/0 = SubResource("StandardMaterial3D_dropzone")
+cast_shadow = 0
+
+[node name="Axe" type="RigidBody3D" parent="." unique_id=300100030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.366, 0.0546, -0.54)
+freeze = true
+
+[node name="AxeMesh" type="MeshInstance3D" parent="Axe"]
+transform = Transform3D(-0.02257, 0, -0.022684, 0, 0.032, 0, 0.022684, 0, -0.02257, 0, 0, 0)
+mesh = ExtResource("13_axe")
+
+[node name="Fireplace" type="Node3D" parent="." unique_id=300100010]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8.1)
+script = ExtResource("12_fire")
+
+[node name="Hearth" type="CSGBox3D" parent="Fireplace" unique_id=300100011]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+use_collision = true
+size = Vector3(1, 0.7, 0.4)
+
+[node name="Torch" type="Node3D" parent="." unique_id=300100080]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.8, -6.0)
+script = ExtResource("18_torch")
+
+[node name="Glow" type="OmniLight3D" parent="Fireplace" unique_id=300100012]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0.3)
+visible = false
+light_color = Color(1, 0.6, 0.25, 1)
+light_energy = 2.2
+shadow_enabled = true
+omni_range = 4.5
+
+[node name="Chimney" type="CSGCylinder3D" parent="Fireplace" unique_id=300100013]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+material = SubResource("StandardMaterial3D_chimney")
+use_collision = true
+radius = 0.16
+height = 3.6
+sides = 8

@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://chicken.gd" id="1_chicken"]
+[ext_resource type="ArrayMesh" path="res://models/chicken/Low_Poly_Chicken_v1_001.obj" id="2_mesh"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_chicken"]
+radius = 0.12
+height = 0.32
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_chicken"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+
+[node name="Chicken" type="CharacterBody3D"]
+script = ExtResource("1_chicken")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 0)
+shape = SubResource("CapsuleShape3D_chicken")
+
+[node name="Model" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.031, 0, 0, 0, 0.031, 0, 0, 0, -0.031, 0, -0.0849, 0)
+mesh = ExtResource("2_mesh")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_chicken")

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cmf77hlgmg5qq"
+path="res://.godot/imported/road-curb-end.obj-d44462b9d0aa2bf8f01c1a3152021391.mesh"
+
+[deps]
+
+files=["res://.godot/imported/road-curb-end.obj-d44462b9d0aa2bf8f01c1a3152021391.mesh"]
+
+source_file="res://assets/kenney_fantasy-town-kit/Models/OBJ format/road-curb-end.obj"
+dest_files=["res://.godot/imported/road-curb-end.obj-d44462b9d0aa2bf8f01c1a3152021391.mesh", "res://.godot/imported/road-curb-end.obj-d44462b9d0aa2bf8f01c1a3152021391.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

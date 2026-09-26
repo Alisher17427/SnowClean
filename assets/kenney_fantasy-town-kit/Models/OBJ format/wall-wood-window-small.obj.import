@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://8oefbw5r7hms"
+path="res://.godot/imported/wall-wood-window-small.obj-f4dce4fd3c054c179f23ca0c68d54531.mesh"
+
+[deps]
+
+files=["res://.godot/imported/wall-wood-window-small.obj-f4dce4fd3c054c179f23ca0c68d54531.mesh"]
+
+source_file="res://assets/kenney_fantasy-town-kit/Models/OBJ format/wall-wood-window-small.obj"
+dest_files=["res://.godot/imported/wall-wood-window-small.obj-f4dce4fd3c054c179f23ca0c68d54531.mesh", "res://.godot/imported/wall-wood-window-small.obj-f4dce4fd3c054c179f23ca0c68d54531.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false
