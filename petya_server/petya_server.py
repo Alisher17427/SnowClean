@@ -30,6 +30,7 @@ import base64
 import json
 import os
 import subprocess
+import sys
 import tempfile
 
 from flask import Flask, request, jsonify
@@ -42,7 +43,6 @@ OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_MODEL = "llama3.2"        # 3B - хватает с запасом на 16 ГБ ОЗУ без видеокарты;
                                   # для реплик NPC покрупнее модель не даёт заметно лучше
 WHISPER_MODEL_SIZE = "small"     # base/small/medium - больше = точнее, но медленнее
-PIPER_BIN = "piper"              # если piper не в PATH - укажите полный путь к piper.exe
 PIPER_VOICE = os.path.join(os.path.dirname(__file__), "ru_RU-denis-medium.onnx")
 # ---------------------------
 
@@ -94,8 +94,12 @@ def ask_ollama(user_text: str, quest_context: str) -> str:
 def synthesize(text: str) -> bytes:
     out_path = tempfile.mktemp(suffix=".wav")
     try:
+        # "python -m piper", а не команда "piper" напрямую - pip install piper-tts
+        # кладёт piper.exe в папку Scripts, которая часто не добавлена в PATH
+        # (та же история, что и с остальными пакетами при установке requirements.txt);
+        # sys.executable -m piper работает всегда, независимо от PATH
         subprocess.run(
-            [PIPER_BIN, "--model", PIPER_VOICE, "--output_file", out_path],
+            [sys.executable, "-m", "piper", "--model", PIPER_VOICE, "--output_file", out_path],
             input=text.encode("utf-8"),
             check=True,
             capture_output=True,
@@ -138,8 +142,13 @@ def talk():
     try:
         reply_audio = synthesize(reply_text)
         reply_audio_b64 = base64.b64encode(reply_audio).decode("ascii")
+    except subprocess.CalledProcessError as e:
+        # текст важнее звука - если озвучка не собралась, всё равно вернём текст;
+        # печатаем stderr самого piper - в нём обычно видна настоящая причина
+        # (например "модель не найдена" или "неверный файл голоса")
+        print("TTS failed:", e.stderr.decode("utf-8", "ignore") if e.stderr else e)
+        reply_audio_b64 = ""
     except Exception as e:
-        # текст важнее звука - если озвучка не собралась, всё равно вернём текст
         print("TTS failed:", e)
         reply_audio_b64 = ""
 
