@@ -43,7 +43,7 @@ OLLAMA_MODEL = "llama3.2"        # 3B - хватает с запасом на 16
                                   # для реплик NPC покрупнее модель не даёт заметно лучше
 WHISPER_MODEL_SIZE = "small"     # base/small/medium - больше = точнее, но медленнее
 PIPER_BIN = "piper"              # если piper не в PATH - укажите полный путь к piper.exe
-PIPER_VOICE = os.path.join(os.path.dirname(__file__), "ru_RU-irina-medium.onnx")
+PIPER_VOICE = os.path.join(os.path.dirname(__file__), "ru_RU-denis-medium.onnx")
 # ---------------------------
 
 app = Flask(__name__)
