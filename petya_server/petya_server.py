@@ -29,6 +29,7 @@
 import base64
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -78,11 +79,28 @@ markdown-разметки, без списков, как будто это ре�
 но не переключайся на английский."""
 
 
-def build_messages(player_id: str, user_text: str, quest_context: str) -> list:
+# не-кириллические буквенные символы (китайские/японские/корейские иероглифы,
+# латиница) - используется, чтобы поймать модель, съехавшую на другой язык,
+# и не отправлять такое в Piper (он умеет только русский голос)
+_NON_RUSSIAN_RE = re.compile(r"[一-鿿぀-ヿ가-힯㐀-䶿A-Za-z]")
+
+
+def _has_non_russian(text: str) -> bool:
+    return bool(_NON_RUSSIAN_RE.search(text))
+
+
+def build_messages(player_id: str, user_text: str, quest_context: str, strict_reminder: bool = False) -> list:
     history = conversation_history_by_player.setdefault(player_id, [])
     messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\n" + quest_context}]
     messages.extend(history[-MAX_HISTORY_MESSAGES:])
     messages.append({"role": "user", "content": user_text})
+    if strict_reminder:
+        # напоминание сразу перед генерацией - модели лучше следуют инструкции,
+        # которая стоит ближе к концу диалога, чем той, что была в самом начале
+        # (в system-промпте, до которого уже "далеко" после истории разговора)
+        messages.append({"role": "system", "content":
+            "Ещё раз: ответь СТРОГО на русском языке, кириллицей. Ни одного "
+            "иероглифа, ни одной латинской буквы."})
     return messages
 
 
@@ -91,17 +109,33 @@ def transcribe(wav_path: str) -> str:
     return " ".join(seg.text for seg in segments).strip()
 
 
-def ask_ollama(player_id: str, user_text: str, quest_context: str) -> str:
+def _ask_ollama_once(player_id: str, user_text: str, quest_context: str, strict_reminder: bool = False) -> str:
     resp = requests.post(OLLAMA_URL, json={
         "model": OLLAMA_MODEL,
-        "messages": build_messages(player_id, user_text, quest_context),
+        "messages": build_messages(player_id, user_text, quest_context, strict_reminder),
         "stream": False,
         # ниже температура - меньше случайных "фантазий" и переключений на
-        # английский у маленькой модели (по умолчанию 0.8, здесь поспокойнее)
+        # другой язык у модели (по умолчанию 0.8, здесь поспокойнее)
         "options": {"temperature": 0.5},
     }, timeout=60)
     resp.raise_for_status()
     return resp.json()["message"]["content"].strip()
+
+
+# и llama (съезжала на английский), и qwen (съезжает на китайский) время от
+# времени игнорируют промпт про "только русский" - вместо того чтобы просто
+# гадать, какая модель надёжнее, ловим это программно: если в ответе нашлись
+# иероглифы/латиница, пробуем перегенерировать ОДИН раз с более настойчивым
+# напоминанием, а если и это не помогло - вычищаем чужие символы вручную,
+# чтобы хотя бы не отправить кашу в Piper (озвучка всё равно только русская)
+def ask_ollama(player_id: str, user_text: str, quest_context: str) -> str:
+    reply = _ask_ollama_once(player_id, user_text, quest_context)
+    if _has_non_russian(reply):
+        reply = _ask_ollama_once(player_id, user_text, quest_context, strict_reminder=True)
+    if _has_non_russian(reply):
+        reply = _NON_RUSSIAN_RE.sub("", reply)
+        reply = re.sub(r"\s{2,}", " ", reply).strip()
+    return reply
 
 
 def synthesize(text: str) -> bytes:
