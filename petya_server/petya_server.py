@@ -40,8 +40,10 @@ from faster_whisper import WhisperModel
 # --- настройте под себя ---
 LISTEN_PORT = 8765
 OLLAMA_URL = "http://localhost:11434/api/chat"
-OLLAMA_MODEL = "llama3.2"        # 3B - хватает с запасом на 16 ГБ ОЗУ без видеокарты;
-                                  # для реплик NPC покрупнее модель не даёт заметно лучше
+OLLAMA_MODEL = "qwen2.5:7b"      # 7B - llama3.2 (3B) слишком часто съезжала на английский
+                                  # посреди фразы и путалась в характере; qwen2.5 заметно
+                                  # надёжнее держит русский язык и инструкции, но и медленнее
+                                  # (на 16 ГБ без видеокарты ждите десятки секунд на ответ)
 WHISPER_MODEL_SIZE = "small"     # base/small/medium - больше = точнее, но медленнее
 PIPER_VOICE = os.path.join(os.path.dirname(__file__), "ru_RU-denis-medium.onnx")
 # ---------------------------
