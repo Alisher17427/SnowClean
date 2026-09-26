@@ -76,7 +76,17 @@ markdown-разметки, без списков, как будто это ре�
 ВАЖНО: отвечай ТОЛЬКО на русском языке. Ни одного слова, ни одной буквы на
 английском или любом другом языке - даже отдельных слов внутри русской фразы.
 Если не знаешь, как сказать что-то по-русски - скажи проще, другими словами,
-но не переключайся на английский."""
+но не переключайся на английский.
+
+Иногда реплика игрока будет не прямой речью, а описанием события в скобках,
+например "(игрок только что принёс тебе бревно)" или "(игрок долго молчит рядом)" -
+в таком случае среагируй на само событие своей репликой, как будто увидел это
+своими глазами, а не отвечай так, будто это тебе сказали вслух.
+
+Если игрок ПРЯМО просит открыть список заданий/квестов (например "открой задания",
+"покажи квесты", "что мне нужно сделать") - после своего обычного ответа, на
+отдельной строке в самом конце, добавь ровно такую строку: [ACTION:OPEN_QUESTS]
+Если игрок не просит ничего подобного - НЕ добавляй эту строку вообще."""
 
 
 # не-кириллические буквенные символы (китайские/японские/корейские иероглифы,
@@ -87,6 +97,22 @@ _NON_RUSSIAN_RE = re.compile(r"[一-鿿぀-ヿ가-힯㐀-䶿A-Za-z]")
 
 def _has_non_russian(text: str) -> bool:
     return bool(_NON_RUSSIAN_RE.search(text))
+
+
+# [ACTION:XXX] - лёгкий способ дать модели "позвать" игровое действие (сейчас
+# только открыть меню заданий) без настоящего function calling - модель просто
+# дописывает тег отдельной строкой, если распознала команду голосом, а мы его
+# вырезаем из текста до того, как он попадёт в субтитры/озвучку
+_ACTION_TAG_RE = re.compile(r"\[ACTION:([A-Z_]+)\]")
+
+
+def extract_action(text: str):
+    m = _ACTION_TAG_RE.search(text)
+    if not m:
+        return text.strip(), ""
+    action = m.group(1)
+    clean = _ACTION_TAG_RE.sub("", text).strip()
+    return clean, action
 
 
 def build_messages(player_id: str, user_text: str, quest_context: str, strict_reminder: bool = False) -> list:
@@ -127,15 +153,20 @@ def _ask_ollama_once(player_id: str, user_text: str, quest_context: str, strict_
 # гадать, какая модель надёжнее, ловим это программно: если в ответе нашлись
 # иероглифы/латиница, пробуем перегенерировать ОДИН раз с более настойчивым
 # напоминанием, а если и это не помогло - вычищаем чужие символы вручную,
-# чтобы хотя бы не отправить кашу в Piper (озвучка всё равно только русская)
-def ask_ollama(player_id: str, user_text: str, quest_context: str) -> str:
-    reply = _ask_ollama_once(player_id, user_text, quest_context)
+# чтобы хотя бы не отправить кашу в Piper (озвучка всё равно только русская).
+#
+# Тег [ACTION:...] вырезается ДО проверки на чужой язык - иначе латинские буквы
+# в самом теге ложно засчитывались бы как "модель съехала на английский"
+def ask_ollama(player_id: str, user_text: str, quest_context: str):
+    raw = _ask_ollama_once(player_id, user_text, quest_context)
+    reply, action = extract_action(raw)
     if _has_non_russian(reply):
-        reply = _ask_ollama_once(player_id, user_text, quest_context, strict_reminder=True)
+        raw = _ask_ollama_once(player_id, user_text, quest_context, strict_reminder=True)
+        reply, action = extract_action(raw)
     if _has_non_russian(reply):
         reply = _NON_RUSSIAN_RE.sub("", reply)
         reply = re.sub(r"\s{2,}", " ", reply).strip()
-    return reply
+    return reply, action
 
 
 def synthesize(text: str) -> bytes:
@@ -168,6 +199,32 @@ def synthesize(text: str) -> bytes:
             os.remove(in_path)
 
 
+# общая часть /talk и /prompt: спросить модель, сохранить в историю, озвучить.
+# Разница между ними только в том, откуда берётся user_text - из распознанной
+# речи (/talk) или из синтетического описания события (/prompt, см. ниже)
+def _generate_reply(player_id: str, user_text: str, quest_context: str):
+    reply_text, action = ask_ollama(player_id, user_text, quest_context)
+
+    history = conversation_history_by_player.setdefault(player_id, [])
+    history.append({"role": "user", "content": user_text})
+    history.append({"role": "assistant", "content": reply_text})
+
+    try:
+        reply_audio = synthesize(reply_text)
+        reply_audio_b64 = base64.b64encode(reply_audio).decode("ascii")
+    except subprocess.CalledProcessError as e:
+        # текст важнее звука - если озвучка не собралась, всё равно вернём текст;
+        # печатаем stderr самого piper - в нём обычно видна настоящая причина
+        # (например "модель не найдена" или "неверный файл голоса")
+        print("TTS failed:", e.stderr.decode("utf-8", "ignore") if e.stderr else e)
+        reply_audio_b64 = ""
+    except Exception as e:
+        print("TTS failed:", e)
+        reply_audio_b64 = ""
+
+    return reply_text, action, reply_audio_b64
+
+
 @app.route("/talk", methods=["POST"])
 def talk():
     data = request.get_json(force=True)
@@ -187,34 +244,45 @@ def talk():
         os.remove(in_path)
 
     if not user_text:
-        return jsonify({"user_text": "", "reply_text": "", "reply_audio_b64": ""})
+        return jsonify({"user_text": "", "reply_text": "", "reply_audio_b64": "", "action": ""})
 
     try:
-        reply_text = ask_ollama(player_id, user_text, quest_context)
+        reply_text, action, reply_audio_b64 = _generate_reply(player_id, user_text, quest_context)
     except Exception as e:
         return jsonify({"error": "ollama: %s" % e}), 502
-
-    history = conversation_history_by_player.setdefault(player_id, [])
-    history.append({"role": "user", "content": user_text})
-    history.append({"role": "assistant", "content": reply_text})
-
-    try:
-        reply_audio = synthesize(reply_text)
-        reply_audio_b64 = base64.b64encode(reply_audio).decode("ascii")
-    except subprocess.CalledProcessError as e:
-        # текст важнее звука - если озвучка не собралась, всё равно вернём текст;
-        # печатаем stderr самого piper - в нём обычно видна настоящая причина
-        # (например "модель не найдена" или "неверный файл голоса")
-        print("TTS failed:", e.stderr.decode("utf-8", "ignore") if e.stderr else e)
-        reply_audio_b64 = ""
-    except Exception as e:
-        print("TTS failed:", e)
-        reply_audio_b64 = ""
 
     return jsonify({
         "user_text": user_text,
         "reply_text": reply_text,
         "reply_audio_b64": reply_audio_b64,
+        "action": action,
+    })
+
+
+# для проактивных реплик Пети (сдал квест, долго молчит рядом) - игра шлёт сюда
+# готовое ТЕКСТОВОЕ описание события вместо записи голоса, распознавание речи
+# пропускается целиком. user_text в ответе - всегда пустая строка, чтобы игра
+# не показывала в субтитрах "Вы: (игрок долго молчит рядом)" как будто это
+# реплика игрока (см. SYSTEM_PROMPT - там объяснено, что скобки это событие)
+@app.route("/prompt", methods=["POST"])
+def prompt_endpoint():
+    data = request.get_json(force=True)
+    text = data.get("text", "")
+    quest_context = data.get("quest_context", "")
+    player_id = str(data.get("player_id", "unknown"))
+    if not text:
+        return jsonify({"error": "no text"}), 400
+
+    try:
+        reply_text, action, reply_audio_b64 = _generate_reply(player_id, text, quest_context)
+    except Exception as e:
+        return jsonify({"error": "ollama: %s" % e}), 502
+
+    return jsonify({
+        "user_text": "",
+        "reply_text": reply_text,
+        "reply_audio_b64": reply_audio_b64,
+        "action": action,
     })
 
 

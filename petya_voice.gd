@@ -23,6 +23,12 @@ const MAX_RECORD_SECONDS = 12.0  # защита от того, что игрок
 const MIN_RECORDING_BYTES = 4000 # совсем короткая запись (шум/случайное нажатие) не отправляется
 const SUBTITLE_DURATION = 6.0
 
+# проактивность: если игрок стоит рядом с Петей молча дольше IDLE_NAG_SECONDS,
+# Петя сам заговаривает - но не чаще чем раз в NAG_COOLDOWN секунд, иначе он
+# доставал бы репликами каждые 20 секунд, пока кто-то просто стоит рядом
+const IDLE_NAG_SECONDS = 20.0
+const NAG_COOLDOWN = 120.0
+
 var player: Node          # владелец - локальный игрок, см. new_script.gd _ready()
 var petya_node: Node3D
 
@@ -38,6 +44,8 @@ var subtitle_timer: float = 0.0
 var is_recording: bool = false
 var record_start_time: float = 0.0
 var waiting_for_reply: bool = false
+var idle_near_time: float = 0.0
+var nag_cooldown_timer: float = 0.0
 
 var server_host: String = "127.0.0.1"
 var server_port: int = 8765
@@ -147,6 +155,20 @@ func _process(delta):
 	if is_recording and (Time.get_ticks_msec() / 1000.0 - record_start_time) > MAX_RECORD_SECONDS:
 		_stop_recording_and_send()
 
+	# "тишина" - если долго стоишь рядом и ничего не спрашиваешь, Петя сам
+	# заговорит; сбрасывается, если отошёл, или пока идёт запись/ждём ответ,
+	# чтобы не сработать поверх настоящего разговора
+	if nag_cooldown_timer > 0.0:
+		nag_cooldown_timer -= delta
+	if near and not is_recording and not waiting_for_reply:
+		idle_near_time += delta
+		if idle_near_time >= IDLE_NAG_SECONDS and nag_cooldown_timer <= 0.0:
+			idle_near_time = 0.0
+			nag_cooldown_timer = NAG_COOLDOWN
+			trigger_proactive("(игрок уже какое-то время стоит рядом с тобой молча, ничего не спрашивая)")
+	else:
+		idle_near_time = 0.0
+
 func _start_recording():
 	is_recording = true
 	record_start_time = Time.get_ticks_msec() / 1000.0
@@ -169,7 +191,24 @@ func _stop_recording_and_send():
 		# если оба игрока по очереди говорят с Петей, он путает, кто что сказал
 		"player_id": str(multiplayer.get_unique_id()),
 	})
-	var url = "http://%s:%d/talk" % [server_host, server_port]
+	_send_request("/talk", body)
+
+# проактивная реплика без записи голоса - сдал квест, долго молчит рядом и т.п.
+# (см. IDLE_NAG_SECONDS выше и вызов в new_script.gd при сдаче бревна). event_text -
+# короткое описание в скобках, сервер понимает такой формат как событие, а не
+# реплику игрока (см. SYSTEM_PROMPT в petya_server.py)
+func trigger_proactive(event_text: String):
+	if waiting_for_reply or is_recording:
+		return
+	var body = JSON.stringify({
+		"text": event_text,
+		"quest_context": _build_quest_context() + "\n\n" + _build_spatial_context(),
+		"player_id": str(multiplayer.get_unique_id()),
+	})
+	_send_request("/prompt", body)
+
+func _send_request(path: String, body: String):
+	var url = "http://%s:%d%s" % [server_host, server_port, path]
 	waiting_for_reply = true
 	_show_subtitle("Петя думает...")
 	var err = http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, body)
@@ -190,9 +229,16 @@ func _on_request_completed(result, response_code, _headers, body):
 	var user_text = str(data.get("user_text", ""))
 	var reply_text = str(data.get("reply_text", ""))
 	var reply_audio_b64 = str(data.get("reply_audio_b64", ""))
+	var action = str(data.get("action", ""))
 	if reply_text == "":
 		_show_subtitle("Петя не разобрал, что ты сказал")
 		return
+
+	# голосовая команда - открывается только у того, кто её произнёс, не у всех
+	# остальных (в отличие от диалога/подсветки ниже - открывать чужое меню
+	# заданий у других игроков было бы странно)
+	if action == "OPEN_QUESTS" and is_instance_valid(player) and player.quest_menu:
+		player.quest_menu.open()
 
 	# рассылаем всем игрокам (не только себе) - иначе разговор с Петей слышит и
 	# видит только тот, кто с ним говорит, хотя в кооперативе рядом может стоять
@@ -211,8 +257,15 @@ func _on_request_completed(result, response_code, _headers, body):
 # и у того, кто спросил, и у всех остальных рядом; speaker_id сравнивается со
 # своим id, чтобы подписать реплику "Вы" только у реального автора вопроса
 func show_dialogue(speaker_id: int, speaker_name: String, user_text: String, reply_text: String, reply_audio: PackedByteArray, has_target: bool, target_pos: Vector3):
-	var who = "Вы" if speaker_id == multiplayer.get_unique_id() else speaker_name
-	_show_subtitle("%s: %s\n\nПетя: %s" % [who, user_text, reply_text])
+	var subtitle = ""
+	if user_text != "":
+		# обычный разговор - подписан тем, кто спросил
+		var who = "Вы" if speaker_id == multiplayer.get_unique_id() else speaker_name
+		subtitle = "%s: %s\n\n" % [who, user_text]
+	# иначе - проактивная реплика (сдал квест, долго молчит рядом и т.п.), без
+	# строки "Вы: ..." - её никто не произносил вслух, это реакция на событие
+	subtitle += "Петя: %s" % reply_text
+	_show_subtitle(subtitle)
 	if reply_audio.size() > 0:
 		var stream = _audio_stream_from_wav(reply_audio)
 		if stream and is_instance_valid(petya_node):

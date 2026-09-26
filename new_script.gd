@@ -29,6 +29,7 @@ var fireplace_node: Node3D
 # G с бревном в руках на красном коврике у него - сдаёт бревно в счёт квеста ---
 var petya_node: Node3D
 var quest_menu: Node
+var petya_voice: Node   # см. petya_voice.gd - голосовой чат/проактивные реплики Пети
 const QUEST_INTERACT_RADIUS = 2.4
 const QUEST_DROPZONE_RADIUS = 1.0
 
@@ -359,7 +360,7 @@ func _ready():
 		add_child(quest_menu)
 		_build_hud()
 		if petya_node:
-			var petya_voice = preload("res://petya_voice.gd").new()
+			petya_voice = preload("res://petya_voice.gd").new()
 			petya_voice.name = "PetyaVoice"
 			add_child(petya_voice)
 			petya_voice.setup(self, petya_node)
@@ -880,6 +881,8 @@ func _update_survival(delta: float, snow_depth: float):
 			snow_sync.deliver_log_to_quest.rpc("petya_wood", held_log_id)
 			held_log_id = ""
 			_unequip_log()
+			if petya_voice:
+				petya_voice.trigger_proactive("(игрок только что принёс тебе бревно и положил на коврик)")
 		elif petya_node and global_position.distance_to(petya_node.global_position) <= QUEST_INTERACT_RADIUS:
 			quest_menu.open()
 		elif _torch_pickup_pos() != null and global_position.distance_to(_torch_pickup_pos()) <= TORCH_PICKUP_RADIUS:
