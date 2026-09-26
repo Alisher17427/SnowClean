@@ -164,7 +164,7 @@ func _stop_recording_and_send():
 	var wav_bytes = _wav_bytes_from_recording(recording)
 	var body = JSON.stringify({
 		"audio_b64": Marshalls.raw_to_base64(wav_bytes),
-		"quest_context": _build_quest_context(),
+		"quest_context": _build_quest_context() + "\n\n" + _build_spatial_context(),
 		# отдельная история разговора на каждого игрока на сервере - без этого,
 		# если оба игрока по очереди говорят с Петей, он путает, кто что сказал
 		"player_id": str(multiplayer.get_unique_id()),
@@ -229,6 +229,54 @@ func _build_quest_context() -> String:
 		else:
 			var cur = sync.quest_progress.get(id, 0)
 			lines.append("- %s: %d из %d (%s)" % [q["name"], cur, q["target"], q["desc"]])
+	return "\n".join(lines)
+
+# --- пространственный контекст: где сейчас игрок и в какой стороне от него
+# находятся ключевые объекты - чтобы Петя мог отвечать на "где камин?"/"куда
+# идти?" реальными направлениями, а не выдумывать. Направления - по сторонам
+# света в мировых координатах игры (условно: -Z это "север"), не относительно
+# того, куда сейчас смотрит игрок - иначе пришлось бы каждый раз пересчитывать
+# заново при повороте камеры, а Пете это и не нужно (он должен один раз сказать
+# "иди на север", а не отслеживать взгляд игрока в реальном времени)
+const COMPASS_DIRS = ["к северу", "к северо-востоку", "к востоку", "к юго-востоку",
+	"к югу", "к юго-западу", "к западу", "к северо-западу"]
+
+func _compass_direction(from: Vector3, to: Vector3) -> String:
+	var delta = to - from
+	if Vector2(delta.x, delta.z).length() < 0.5:
+		return "рядом с тобой"
+	var angle = atan2(delta.x, -delta.z)   # 0 = "север" (-Z), дальше по часовой стрелке
+	if angle < 0:
+		angle += TAU
+	var idx = int(round(angle / (TAU / 8.0))) % 8
+	return COMPASS_DIRS[idx]
+
+func _build_spatial_context() -> String:
+	var pos = player.global_position
+	var day_night = get_tree().current_scene.get_node_or_null("DayNight")
+	var lines = ["Где сейчас игрок и что вокруг (используй, если спросят, где что-то",
+		"находится или куда идти - отвечай направлением и примерным расстоянием):"]
+	lines.append("- Игрок сейчас %s, сейчас %s" % [
+		"в доме" if player._is_indoors(pos) else "на улице",
+		"ночь" if (day_night and day_night.is_night) else "день",
+	])
+
+	var landmarks = []
+	if is_instance_valid(petya_node):
+		landmarks.append(["ты сам (Петя)", petya_node.global_position])
+	if is_instance_valid(player.fireplace_node):
+		landmarks.append(["камин в доме", player.fireplace_node.global_position])
+	if is_instance_valid(player.axe_node) and player.axe_node.visible:
+		landmarks.append(["топор", player.axe_node.global_position])
+	if is_instance_valid(player.torch_node):
+		landmarks.append(["факел на стене", player.torch_node.global_position])
+
+	for entry in landmarks:
+		var lname = entry[0]
+		var lpos: Vector3 = entry[1]
+		var dist = int(round(pos.distance_to(lpos)))
+		lines.append("- %s: %d м %s от игрока" % [lname, dist, _compass_direction(pos, lpos)])
+
 	return "\n".join(lines)
 
 # --- WAV: кодируем то, что записал микрофон (для отправки), и декодируем то,
