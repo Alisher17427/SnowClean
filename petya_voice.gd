@@ -200,12 +200,17 @@ func _on_request_completed(result, response_code, _headers, body):
 	# кодировка ни к чему, base64 нужен был только для JSON до Python-сервера
 	var reply_audio = Marshalls.base64_to_raw(reply_audio_b64) if reply_audio_b64 != "" else PackedByteArray()
 	var speaker_name = player.nickname if player.nickname != "" else "Игрок"
-	player.snow_sync.petya_dialogue.rpc(multiplayer.get_unique_id(), speaker_name, user_text, reply_text, reply_audio)
+	# если в вопросе или ответе упомянут известный предмет, который реально
+	# есть на карте - подсветим его для всех, а не только считаем текстом
+	var target = _detect_target_landmark(user_text, reply_text)
+	var has_target = target.size() > 0
+	var target_pos = target.get("pos", Vector3.ZERO)
+	player.snow_sync.petya_dialogue.rpc(multiplayer.get_unique_id(), speaker_name, user_text, reply_text, reply_audio, has_target, target_pos)
 
 # вызывается через RPC у КАЖДОГО игрока (см. petya_dialogue в snow_sync.gd) -
 # и у того, кто спросил, и у всех остальных рядом; speaker_id сравнивается со
 # своим id, чтобы подписать реплику "Вы" только у реального автора вопроса
-func show_dialogue(speaker_id: int, speaker_name: String, user_text: String, reply_text: String, reply_audio: PackedByteArray):
+func show_dialogue(speaker_id: int, speaker_name: String, user_text: String, reply_text: String, reply_audio: PackedByteArray, has_target: bool, target_pos: Vector3):
 	var who = "Вы" if speaker_id == multiplayer.get_unique_id() else speaker_name
 	_show_subtitle("%s: %s\n\nПетя: %s" % [who, user_text, reply_text])
 	if reply_audio.size() > 0:
@@ -214,6 +219,64 @@ func show_dialogue(speaker_id: int, speaker_name: String, user_text: String, rep
 			reply_player.global_position = petya_node.global_position + Vector3(0, 1.5, 0)
 			reply_player.stream = stream
 			reply_player.play()
+	if has_target:
+		_highlight_target(target_pos)
+
+# --- подсветка предмета, о котором спросили - каждый клиент независимо создаёт
+# у себя такой же временный визуал в той же мировой точке (не сетевой объект,
+# просто локальный эффект, как и звук/субтитры выше - синхронность обеспечивает
+# сам RPC petya_dialogue, а не отдельная сетевая нода) ---
+const HIGHLIGHT_DURATION = 8.0
+const HIGHLIGHT_RADIUS = 0.6
+
+func _highlight_target(pos: Vector3):
+	var mark = MeshInstance3D.new()
+	var mesh = SphereMesh.new()
+	mesh.radius = HIGHLIGHT_RADIUS
+	mesh.height = 0.05
+	mark.mesh = mesh
+	var mat = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.1, 0.1, 0.55)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.0, 0.0)
+	mat.emission_energy_multiplier = 1.5
+	mat.no_depth_test = true   # видно сквозь стены/предметы, как и текстовые подсказки
+	mark.material_override = mat
+	mark.position = pos + Vector3(0, 0.05, 0)
+	get_tree().current_scene.add_child(mark)
+
+	var pulse = create_tween()
+	pulse.set_loops(int(HIGHLIGHT_DURATION / 0.8))
+	pulse.tween_property(mark, "scale", Vector3(1.3, 1.0, 1.3), 0.4)
+	pulse.tween_property(mark, "scale", Vector3(1.0, 1.0, 1.0), 0.4)
+
+	var fade = create_tween()
+	fade.tween_interval(HIGHLIGHT_DURATION - 1.0)
+	fade.tween_property(mat, "albedo_color:a", 0.0, 1.0)
+	fade.tween_callback(mark.queue_free)
+
+# ищет в тексте вопроса/ответа стем известного предмета ("топор" совпадёт и с
+# "топора", "топором" и т.п. - падежные окончания в русском обычно не трогают
+# начало слова) - подсветка ставится, только если предмет сейчас реально на
+# карте (например, топор - только если лежит на земле, а не спрятан в руках)
+func _detect_target_landmark(user_text: String, reply_text: String) -> Dictionary:
+	var haystack = (user_text + " " + reply_text).to_lower()
+	for lm in _get_landmarks():
+		if haystack.find(lm["keyword"]) != -1:
+			return lm
+	return {}
+
+func _get_landmarks() -> Array:
+	var landmarks = []
+	if is_instance_valid(player.fireplace_node):
+		landmarks.append({"name": "камин в доме", "keyword": "камин", "pos": player.fireplace_node.global_position})
+	if is_instance_valid(player.axe_node) and player.axe_node.visible:
+		landmarks.append({"name": "топор", "keyword": "топор", "pos": player.axe_node.global_position})
+	if is_instance_valid(player.torch_node):
+		landmarks.append({"name": "факел на стене", "keyword": "факел", "pos": player.torch_node.global_position})
+	return landmarks
 
 # --- квестовый контекст: чтобы Петя знал, что уже сделано, а что ещё нет,
 # и мог сослаться на конкретное задание, а не выдумывать несуществующее ---
@@ -261,21 +324,12 @@ func _build_spatial_context() -> String:
 		"ночь" if (day_night and day_night.is_night) else "день",
 	])
 
-	var landmarks = []
+	var landmarks = _get_landmarks()
 	if is_instance_valid(petya_node):
-		landmarks.append(["ты сам (Петя)", petya_node.global_position])
-	if is_instance_valid(player.fireplace_node):
-		landmarks.append(["камин в доме", player.fireplace_node.global_position])
-	if is_instance_valid(player.axe_node) and player.axe_node.visible:
-		landmarks.append(["топор", player.axe_node.global_position])
-	if is_instance_valid(player.torch_node):
-		landmarks.append(["факел на стене", player.torch_node.global_position])
-
-	for entry in landmarks:
-		var lname = entry[0]
-		var lpos: Vector3 = entry[1]
-		var dist = int(round(pos.distance_to(lpos)))
-		lines.append("- %s: %d м %s от игрока" % [lname, dist, _compass_direction(pos, lpos)])
+		landmarks.append({"name": "ты сам (Петя)", "pos": petya_node.global_position})
+	for lm in landmarks:
+		var dist = int(round(pos.distance_to(lm["pos"])))
+		lines.append("- %s: %d м %s от игрока" % [lm["name"], dist, _compass_direction(pos, lm["pos"])])
 
 	return "\n".join(lines)
 

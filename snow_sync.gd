@@ -939,12 +939,12 @@ func drop_torch(dropper_id: int, pos: Vector3, impulse: Vector3):
 # найти чужой PetyaVoice напрямую нельзя - он существует только у владельца
 # игрока (создаётся в new_script.gd только для is_multiplayer_authority())
 @rpc("any_peer", "call_local", "reliable")
-func petya_dialogue(speaker_id: int, speaker_name: String, user_text: String, reply_text: String, reply_audio: PackedByteArray):
+func petya_dialogue(speaker_id: int, speaker_name: String, user_text: String, reply_text: String, reply_audio: PackedByteArray, has_target: bool, target_pos: Vector3):
 	for p in get_tree().get_nodes_in_group("players"):
 		if p.is_multiplayer_authority():
 			var voice = p.get_node_or_null("PetyaVoice")
 			if voice:
-				voice.show_dialogue(speaker_id, speaker_name, user_text, reply_text, reply_audio)
+				voice.show_dialogue(speaker_id, speaker_name, user_text, reply_text, reply_audio, has_target, target_pos)
 			break
 
 # хост отправляет новому игроку всё, что уже произошло - в том числе уже
