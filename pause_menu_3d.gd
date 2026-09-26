@@ -46,6 +46,27 @@ var ao_label: Label3D
 var render_label: Label3D
 var aa_label: Label3D
 
+# разрешение окна и лимит FPS - применяются к DisplayServer/Engine напрямую (не
+# через Environment/Viewport, как остальные), обзор (FOV) - к камере игрока.
+# Разрешение и оконный/полноэкранный режим взаимосвязаны: DisplayServer.window_set_size
+# в полноэкранном режиме ничего не меняет, поэтому список разрешений применяется
+# только когда режим "Оконный" (см. _apply_resolution/_apply_fullscreen)
+const RES_OPTIONS = [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
+const RES_NAMES = ["1280x720", "1600x900", "1920x1080", "2560x1440"]
+const FPS_OPTIONS = [30, 60, 120, 144, 0]   # 0 = без лимита
+const FPS_NAMES = ["30", "60", "120", "144", "Без лимита"]
+const FOV_MIN = 60.0
+const FOV_MAX = 110.0
+const FOV_STEP = 5.0
+var gfx_res_idx: int = 2       # по умолчанию 1920x1080
+var gfx_fps_idx: int = 1       # по умолчанию 60 - совпадает с run/max_fps в project.godot
+var gfx_fov: float = 75.0      # исходный FOV камеры в player.tscn
+var gfx_fullscreen: bool = false
+var res_label: Label3D
+var fps_label: Label3D
+var fov_label: Label3D
+var fullscreen_label: Label3D
+
 func _ready():
 	top_level = true
 	visible = false
@@ -82,8 +103,8 @@ func _ready():
 	_add_panel("–", Vector2(-0.4, -0.91), Vector2(0.2, PANEL_H), "aa_down", 0.16, 1)
 	aa_label = _add_panel("", Vector2(0, -0.91), Vector2(0.56, PANEL_H), "", 0.09, 1)
 	_add_panel("+", Vector2(0.4, -0.91), Vector2(0.2, PANEL_H), "aa_up", 0.16, 1)
-	_add_panel("Назад", Vector2(0, -1.18), Vector2(1.0, PANEL_H), "gfx_back", 0.09, 1)
-	_apply_all_gfx_settings()
+	_add_panel("Экран", Vector2(0, -1.18), Vector2(1.0, PANEL_H), "screen_open", 0.09, 1)
+	_add_panel("Назад", Vector2(0, -1.45), Vector2(1.0, PANEL_H), "gfx_back", 0.09, 1)
 
 	# страница 2 - кастомизация: цвет перчаток, разблокируется квестами у Пети
 	# (см. HAND_COLORS в new_script.gd); ряды строятся по этому же списку, а не
@@ -95,6 +116,31 @@ func _ready():
 		customization_labels.append(lbl)
 		hc_y -= 0.27
 	_add_panel("Назад", Vector2(0, hc_y), Vector2(1.0, PANEL_H), "customization_back", 0.09, 2)
+
+	# страница 3 - экран: разрешение/FPS/FOV/полноэкранный режим - отдельно от
+	# страницы 1, чтобы оба списка оставались короткими. Раньше все 9 строк были
+	# на одной странице, и самые нижние (глубже TILT_ROW_RANGE=1.6 м у _update_row_tilt)
+	# задирались на максимальный наклон и налезали друг на друга при взгляде вниз -
+	# сложнее было прицелиться, а не только некрасиво
+	_add_panel("ЭКРАН", Vector2(0, 0.42), Vector2(1.0, 0.16), "", 0.1, 3)
+	_add_panel("–", Vector2(-0.4, 0.17), Vector2(0.2, PANEL_H), "res_down", 0.16, 3)
+	res_label = _add_panel("", Vector2(0, 0.17), Vector2(0.56, PANEL_H), "", 0.09, 3)
+	_add_panel("+", Vector2(0.4, 0.17), Vector2(0.2, PANEL_H), "res_up", 0.16, 3)
+	_add_panel("–", Vector2(-0.4, -0.1), Vector2(0.2, PANEL_H), "fps_down", 0.16, 3)
+	fps_label = _add_panel("", Vector2(0, -0.1), Vector2(0.56, PANEL_H), "", 0.09, 3)
+	_add_panel("+", Vector2(0.4, -0.1), Vector2(0.2, PANEL_H), "fps_up", 0.16, 3)
+	_add_panel("–", Vector2(-0.4, -0.37), Vector2(0.2, PANEL_H), "fov_down", 0.16, 3)
+	fov_label = _add_panel("", Vector2(0, -0.37), Vector2(0.56, PANEL_H), "", 0.09, 3)
+	_add_panel("+", Vector2(0.4, -0.37), Vector2(0.2, PANEL_H), "fov_up", 0.16, 3)
+	fullscreen_label = _add_panel("", Vector2(0, -0.64), Vector2(1.0, PANEL_H), "fullscreen_toggle", 0.09, 3)
+	_add_panel("Назад", Vector2(0, -0.91), Vector2(1.0, PANEL_H), "screen_back", 0.09, 3)
+
+	# все страницы с настройками построены - применяем сохранённые/дефолтные
+	# значения только теперь: до этого момента лейблы страницы 3 (res_label и
+	# т.п.) ещё не существовали, и обращение к ним упало бы с ошибкой (был баг -
+	# игра вылетала на старте, т.к. _apply_all_gfx_settings() раньше вызывался
+	# сразу после страницы 1, до создания этих Label3D)
+	_apply_all_gfx_settings()
 
 	_compute_leash()
 	_show_page(0)
@@ -356,6 +402,10 @@ func _do_action(action: String):
 			_show_page(1)
 		"gfx_back":
 			_show_page(0)
+		"screen_open":
+			_show_page(3)
+		"screen_back":
+			_show_page(1)
 		"achievements_open":
 			# 2D-список (тот же, что в главном меню) поверх спрятанных 3D-панелей паузы;
 			# мышь на время списка отпускаем - у самих 3D-панелей паузы её захват не
@@ -403,6 +453,35 @@ func _do_action(action: String):
 		"aa_up":
 			gfx_aa = (gfx_aa + 1) % AA_NAMES.size()
 			_apply_aa()
+			_save_gfx_settings()
+		"res_down":
+			gfx_res_idx = (gfx_res_idx - 1 + RES_OPTIONS.size()) % RES_OPTIONS.size()
+			_apply_resolution()
+			_save_gfx_settings()
+		"res_up":
+			gfx_res_idx = (gfx_res_idx + 1) % RES_OPTIONS.size()
+			_apply_resolution()
+			_save_gfx_settings()
+		"fps_down":
+			gfx_fps_idx = (gfx_fps_idx - 1 + FPS_OPTIONS.size()) % FPS_OPTIONS.size()
+			_apply_fps()
+			_save_gfx_settings()
+		"fps_up":
+			gfx_fps_idx = (gfx_fps_idx + 1) % FPS_OPTIONS.size()
+			_apply_fps()
+			_save_gfx_settings()
+		"fov_down":
+			gfx_fov = clamp(gfx_fov - FOV_STEP, FOV_MIN, FOV_MAX)
+			_apply_fov()
+			_save_gfx_settings()
+		"fov_up":
+			gfx_fov = clamp(gfx_fov + FOV_STEP, FOV_MIN, FOV_MAX)
+			_apply_fov()
+			_save_gfx_settings()
+		"fullscreen_toggle":
+			gfx_fullscreen = not gfx_fullscreen
+			_apply_fullscreen()
+			_apply_resolution()
 			_save_gfx_settings()
 		_:
 			if action.begins_with("hand_color_"):
@@ -492,12 +571,49 @@ func _apply_aa():
 				vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	aa_label.text = "Сглаживание: " + AA_NAMES[gfx_aa]
 
+# разрешение окна - только в оконном режиме, в полноэкранном сам размер окна не
+# имеет смысла (оно на весь экран), поэтому здесь строка работает как "заготовка
+# на будущее" - применится, если потом переключиться обратно в оконный режим.
+# get_window(), а не DisplayServer.window_set_size() - тот же приём, что и в
+# _apply_fullscreen ниже, см. комментарий там
+func _apply_resolution():
+	if not gfx_fullscreen:
+		get_window().size = RES_OPTIONS[gfx_res_idx]
+	res_label.text = "Разрешение: " + RES_NAMES[gfx_res_idx]
+
+func _apply_fps():
+	Engine.max_fps = FPS_OPTIONS[gfx_fps_idx]
+	fps_label.text = "Лимит FPS: " + FPS_NAMES[gfx_fps_idx]
+
+func _apply_fov():
+	if is_instance_valid(player) and player.camera:
+		player.camera.fov = gfx_fov
+	fov_label.text = "Обзор (FOV): %d°" % int(gfx_fov)
+
+# полноэкранный режим - обычный (не exclusive) MODE_FULLSCREEN: он честно отдаёт
+# управление композитору окон, поэтому VSync/лимит FPS (см. project.godot) всё
+# ещё работают - в отличие от эксклюзивного полноэкранного режима, из-за которого
+# раньше видеокарта грелась на 100% без всякого лимита.
+#
+# get_window().mode, а не DisplayServer.window_set_mode() напрямую - если игра
+# запущена из редактора с включённым "Embed game in editor window", у неё нет
+# своего окна ОС и DisplayServer.window_set_mode() по window_id молча ничего не
+# делает; get_window() всегда возвращает то окно, которому реально принадлежит
+# этот узел, поэтому переключение надёжно работает и там, и в собранном .exe
+func _apply_fullscreen():
+	get_window().mode = Window.MODE_FULLSCREEN if gfx_fullscreen else Window.MODE_WINDOWED
+	fullscreen_label.text = "Режим: " + ("Полноэкранный" if gfx_fullscreen else "Оконный")
+
 func _apply_all_gfx_settings():
 	_apply_brightness()
 	_apply_glow()
 	_apply_ao()
 	_apply_render_scale()
 	_apply_aa()
+	_apply_fullscreen()
+	_apply_resolution()
+	_apply_fps()
+	_apply_fov()
 
 func _load_gfx_settings():
 	var cfg = ConfigFile.new()
@@ -508,6 +624,10 @@ func _load_gfx_settings():
 	gfx_ao = cfg.get_value("graphics", "ao", gfx_ao)
 	gfx_render_scale = cfg.get_value("graphics", "render_scale", gfx_render_scale)
 	gfx_aa = clamp(cfg.get_value("graphics", "aa", gfx_aa), 0, AA_NAMES.size() - 1)
+	gfx_res_idx = clamp(cfg.get_value("graphics", "res_idx", gfx_res_idx), 0, RES_OPTIONS.size() - 1)
+	gfx_fps_idx = clamp(cfg.get_value("graphics", "fps_idx", gfx_fps_idx), 0, FPS_OPTIONS.size() - 1)
+	gfx_fov = clamp(cfg.get_value("graphics", "fov", gfx_fov), FOV_MIN, FOV_MAX)
+	gfx_fullscreen = cfg.get_value("graphics", "fullscreen", gfx_fullscreen)
 
 func _save_gfx_settings():
 	var cfg = ConfigFile.new()
@@ -516,4 +636,8 @@ func _save_gfx_settings():
 	cfg.set_value("graphics", "ao", gfx_ao)
 	cfg.set_value("graphics", "render_scale", gfx_render_scale)
 	cfg.set_value("graphics", "aa", gfx_aa)
+	cfg.set_value("graphics", "res_idx", gfx_res_idx)
+	cfg.set_value("graphics", "fps_idx", gfx_fps_idx)
+	cfg.set_value("graphics", "fov", gfx_fov)
+	cfg.set_value("graphics", "fullscreen", gfx_fullscreen)
 	cfg.save(GFX_CONFIG_PATH)

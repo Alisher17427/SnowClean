@@ -358,6 +358,11 @@ func _ready():
 		quest_menu.player = self
 		add_child(quest_menu)
 		_build_hud()
+		if petya_node:
+			var petya_voice = preload("res://petya_voice.gd").new()
+			petya_voice.name = "PetyaVoice"
+			add_child(petya_voice)
+			petya_voice.setup(self, petya_node)
 		_build_interact_hint()
 		_build_breath_fog()
 		_build_snowfall()
@@ -674,7 +679,7 @@ func _update_interact_hint(delta: float):
 	elif result and result.collider.is_in_group("chicken") and global_position.distance_to(result.collider.global_position) <= CHICKEN_PICKUP_RADIUS:
 		text = "[ЛКМ]   Взять курицу"
 	elif petya_node and global_position.distance_to(petya_node.global_position) <= QUEST_INTERACT_RADIUS:
-		text = "[G]   Поговорить с Петей"
+		text = "[G]   Задания у Пети   |   [зажать V]   Поговорить"
 	elif _torch_pickup_pos() != null and global_position.distance_to(_torch_pickup_pos()) <= TORCH_PICKUP_RADIUS:
 		text = "[G]   Взять факел"
 	elif held_chicken_path == "" and not has_snowball and not has_axe:

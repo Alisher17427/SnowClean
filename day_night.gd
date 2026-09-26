@@ -12,10 +12,13 @@ extends Node3D
 # управляет освещением (солнце днём, луна ночью) - так проще, чем возиться с
 # относительными базисами двух вложенных друг в друга поворотов.
 #
-# Синхронизации по сети НЕТ - день/ночь каждый компьютер считает сам, с момента
-# запуска сцены. Это только картинка; на геймплей (сон куриц, см. chicken.gd)
-# не влияет - курицами управляет только хост, и он решает по своим часам, а
-# остальным игрокам итоговая позиция курицы всё равно приходит по сети как обычно.
+# Синхронизация по сети: время (elapsed) считает только хост, он же каждые
+# SYNC_INTERVAL секунд рассылает его всем клиентам (см. _process/sync_time), а
+# вошедшему позже игроку отправляет его сразу при подключении (_on_peer_connected) -
+# иначе тот начинал бы отсчёт с нуля от момента своего входа и день/ночь у всех
+# расходились бы. Между рассылками клиент просто сам крутит elapsed вперёд
+# локально (как и раньше) - RPC только изредка поправляет накопившийся дрейф,
+# а не гонит время каждый кадр по сети.
 
 const DAY_DURATION = 180.0     # секунд - длительность дня
 const NIGHT_DURATION = 180.0   # секунд - длительность ночи
@@ -32,6 +35,9 @@ const DEEP_NIGHT_ELEVATION = -0.2
 var elapsed: float = 0.0
 var daylight: float = 1.0   # 0 - глухая ночь, 1 - полный день
 var is_night: bool = false
+
+const SYNC_INTERVAL = 5.0   # раз в столько секунд хост поправляет всех клиентов
+var _sync_timer: float = 0.0
 
 var sun_light: DirectionalLight3D
 var pivot: Node3D
@@ -72,6 +78,15 @@ func _ready():
 	# стартуем не в полночь, а чуть после рассвета - чтобы игра начиналась при свете
 	elapsed = DAY_DURATION * 0.1
 
+	# вошедшему позже игроку хост сразу присылает текущее время - иначе тот
+	# начинал бы с elapsed по умолчанию (свой локальный рассвет), а не с реального
+	# момента суток, в котором уже идёт партия у остальных
+	multiplayer.peer_connected.connect(_on_peer_connected)
+
+func _on_peer_connected(id: int):
+	if multiplayer.is_server():
+		sync_time.rpc_id(id, elapsed)
+
 func _build_disc(color: Color, radius: float, glow: bool) -> MeshInstance3D:
 	var mi = MeshInstance3D.new()
 	var mesh = SphereMesh.new()
@@ -91,6 +106,16 @@ func _build_disc(color: Color, radius: float, glow: bool) -> MeshInstance3D:
 
 func _process(delta):
 	elapsed = fmod(elapsed + delta, CYCLE_DURATION)
+
+	# только хост периодически поправляет всех остальных - без этого рассинхрон
+	# постепенно накапливался бы даже при одинаковой стартовой точке (разная
+	# частота кадров/паузы на разных компьютерах), а не только при разном времени входа
+	if multiplayer.is_server():
+		_sync_timer += delta
+		if _sync_timer >= SYNC_INTERVAL:
+			_sync_timer = 0.0
+			sync_time.rpc(elapsed)
+
 	# угол считается по кускам (день/ночь отдельно), а не единым оборотом на весь
 	# цикл - иначе при не равных DAY_DURATION/NIGHT_DURATION солнце добиралось бы
 	# от восхода до заката не за DAY_DURATION секунд, а за произвольное время
@@ -127,6 +152,14 @@ func _process(delta):
 func _get_environment() -> Environment:
 	var we = get_parent().get_node_or_null("WorldEnvironment")
 	return we.environment if we else null
+
+# хост присылает клиенту актуальное время - либо периодически (см. _process),
+# либо сразу при подключении (см. _on_peer_connected). "authority" - RPC можно
+# вызвать только от хоста (у этого узла authority по умолчанию = 1, id сервера),
+# так что случайно подделать время суток с чужого клиента нельзя
+@rpc("authority", "call_remote", "reliable")
+func sync_time(server_elapsed: float):
+	elapsed = server_elapsed
 
 # трёхточечная интерполяция: 0..0.5 - от a (ночь) к b (рассвет/закат), 0.5..1 - от b
 # к c (день) - тёплый рассвет/закат получается ровно в середине перехода, а не

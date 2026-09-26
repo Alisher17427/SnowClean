@@ -865,8 +865,12 @@ func _setup_axe_physics():
 	if not axe_taken:
 		axe_body.global_position = axe_ground_pos
 
-# кто-то поднял топор с земли: у всех он прячется на месте, а в руках появляется
-# только у того, кто поднял (picker_id == свой id - так же, как дрова при рубке дерева)
+# кто-то поднял топор с земли: у всех он прячется на месте, а копия в руках
+# появляется у ВСЕХ игроков на экране того, кто его поднял - не только у самого
+# поднявшего. _equip_axe() просто вешает меш на arms того игрока, чей это узел
+# (arms строятся для каждого игрока в сцене, не только для локального - см.
+# _build_arms в new_script.gd), поэтому раньше искусственное ограничение
+# "picker_id == свой id" просто прятало топор в руках от других игроков в кооперативе
 @rpc("any_peer", "call_local", "reliable")
 func pickup_axe(picker_id: int):
 	axe_taken = true
@@ -874,10 +878,9 @@ func pickup_axe(picker_id: int):
 	if axe_body:
 		axe_body.visible = false
 		axe_body.freeze = true
-	if picker_id == multiplayer.get_unique_id():
-		var me = get_parent().get_node_or_null("Players/" + str(picker_id))
-		if me:
-			me._equip_axe()
+	var picker = get_parent().get_node_or_null("Players/" + str(picker_id))
+	if picker:
+		picker._equip_axe()
 
 # кто-то выбросил топор: у всех он падает физикой на землю в указанном месте
 # (не телепортом, как раньше), а из рук того, кто бросил, пропадает
@@ -893,10 +896,9 @@ func drop_axe(dropper_id: int, pos: Vector3, impulse: Vector3):
 		axe_body.visible = true
 		axe_body.freeze = false
 		axe_body.apply_central_impulse(impulse)
-	if dropper_id == multiplayer.get_unique_id():
-		var me = get_parent().get_node_or_null("Players/" + str(dropper_id))
-		if me:
-			me._unequip_axe()
+	var dropper = get_parent().get_node_or_null("Players/" + str(dropper_id))
+	if dropper:
+		dropper._unequip_axe()
 
 # кто-то взял факел - со стены или с земли (куда его до этого бросили). Прячется
 # у всех, личная светящаяся копия появляется только у поднявшего (см. _equip_torch)
