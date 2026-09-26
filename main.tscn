@@ -13,12 +13,12 @@
 [ext_resource type="PackedScene" path="res://models/TreeWinter.tscn" id="11_vivmo"]
 [ext_resource type="Script" uid="uid://7xvpuffhgvws" path="res://fireplace_visual.gd" id="12_fire"]
 [ext_resource type="ArrayMesh" uid="uid://deiqdr51ct35a" path="res://models/axe/12351_Axe_v3_l3.obj" id="13_axe"]
-[ext_resource type="Script" path="res://petya.gd" id="14_petya"]
-[ext_resource type="Script" path="res://clouds.gd" id="15_clouds"]
-[ext_resource type="Script" path="res://mountains.gd" id="16_mountains"]
-[ext_resource type="Script" path="res://day_night.gd" id="17_daynight"]
-[ext_resource type="Script" path="res://torch.gd" id="18_torch"]
-[ext_resource type="Script" path="res://tree_wind.gd" id="19_wind"]
+[ext_resource type="Script" uid="uid://btubty5ujuqs6" path="res://petya.gd" id="14_petya"]
+[ext_resource type="Script" uid="uid://beavmbppq5wfk" path="res://clouds.gd" id="15_clouds"]
+[ext_resource type="Script" uid="uid://cfjgxylwtc207" path="res://mountains.gd" id="16_mountains"]
+[ext_resource type="Script" uid="uid://cmbp3fysg1xv1" path="res://day_night.gd" id="17_daynight"]
+[ext_resource type="Script" uid="uid://05x8le2mnttt" path="res://torch.gd" id="18_torch"]
+[ext_resource type="Script" uid="uid://c3bt4gulreaf6" path="res://tree_wind.gd" id="19_wind"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sun"]
 sky_top_color = Color(0.33, 0.5, 0.78, 1)
@@ -93,18 +93,16 @@ roughness = 0.9
 albedo_color = Color(0.28, 0.16, 0.08, 1)
 roughness = 0.95
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chimney"]
-albedo_color = Color(0.4, 0.38, 0.37, 1)
-roughness = 1.0
-
-
 [sub_resource type="QuadMesh" id="QuadMesh_dropzone"]
 size = Vector2(0.7, 0.7)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dropzone"]
-shading_mode = 0
 transparency = 1
+shading_mode = 0
 albedo_color = Color(0.9, 0.15, 0.1, 0.75)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chimney"]
+albedo_color = Color(0.4, 0.38, 0.37, 1)
 
 [node name="Main" type="Node3D" unique_id=780172330]
 script = ExtResource("4_main")
@@ -280,429 +278,743 @@ script = ExtResource("19_wind")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
 
 [node name="LogSouthF3" type="CSGCylinder3D" parent="House" unique_id=1700001002]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, -1.0, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, -1, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEastF3" type="CSGCylinder3D" parent="House" unique_id=1700001003]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -1.0, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -1, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWestF3" type="CSGCylinder3D" parent="House" unique_id=1700001004]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -1.0, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -1, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthLF3" type="CSGCylinder3D" parent="House" unique_id=1700001005]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, -1.0, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, -1, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthRF3" type="CSGCylinder3D" parent="House" unique_id=1700001006]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, -1.0, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, -1, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouthF2" type="CSGCylinder3D" parent="House" unique_id=1700001007]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, -0.6, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, -0.6, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEastF2" type="CSGCylinder3D" parent="House" unique_id=1700001008]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.6, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.6, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWestF2" type="CSGCylinder3D" parent="House" unique_id=1700001009]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.6, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.6, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthLF2" type="CSGCylinder3D" parent="House" unique_id=1700001010]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, -0.6, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, -0.6, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthRF2" type="CSGCylinder3D" parent="House" unique_id=1700001011]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, -0.6, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, -0.6, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouthF1" type="CSGCylinder3D" parent="House" unique_id=1700001012]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, -0.2, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, -0.2, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEastF1" type="CSGCylinder3D" parent="House" unique_id=1700001013]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.2, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.2, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWestF1" type="CSGCylinder3D" parent="House" unique_id=1700001014]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.2, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.2, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthLF1" type="CSGCylinder3D" parent="House" unique_id=1700001015]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, -0.2, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, -0.2, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthRF1" type="CSGCylinder3D" parent="House" unique_id=1700001016]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, -0.2, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, -0.2, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouth0" type="CSGCylinder3D" parent="House" unique_id=1700001017]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 0.2, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 0.2, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEast0" type="CSGCylinder3D" parent="House" unique_id=1700001018]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.2, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.2, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWest0" type="CSGCylinder3D" parent="House" unique_id=1700001019]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.2, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.2, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthL0" type="CSGCylinder3D" parent="House" unique_id=1700001020]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 0.2, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 0.2, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthR0" type="CSGCylinder3D" parent="House" unique_id=1700001021]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 0.2, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 0.2, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouth1" type="CSGCylinder3D" parent="House" unique_id=1700001022]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 0.6, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 0.6, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEast1" type="CSGCylinder3D" parent="House" unique_id=1700001023]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.6, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.6, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWest1" type="CSGCylinder3D" parent="House" unique_id=1700001024]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.6, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.6, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthL1" type="CSGCylinder3D" parent="House" unique_id=1700001025]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 0.6, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 0.6, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthR1" type="CSGCylinder3D" parent="House" unique_id=1700001026]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 0.6, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 0.6, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouth2" type="CSGCylinder3D" parent="House" unique_id=1700001027]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 1.0, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 1, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEast2" type="CSGCylinder3D" parent="House" unique_id=1700001028]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.0, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWest2" type="CSGCylinder3D" parent="House" unique_id=1700001029]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.0, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthL2" type="CSGCylinder3D" parent="House" unique_id=1700001030]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 1.0, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 1, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthR2" type="CSGCylinder3D" parent="House" unique_id=1700001031]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 1.0, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 1, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouth3" type="CSGCylinder3D" parent="House" unique_id=1700001032]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 1.4, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 1.4, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEast3" type="CSGCylinder3D" parent="House" unique_id=1700001033]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.4, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.4, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWest3" type="CSGCylinder3D" parent="House" unique_id=1700001034]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.4, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.4, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthL3" type="CSGCylinder3D" parent="House" unique_id=1700001035]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 1.4, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 1.4, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthR3" type="CSGCylinder3D" parent="House" unique_id=1700001036]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 1.4, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 1.4, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouth4" type="CSGCylinder3D" parent="House" unique_id=1700001037]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 1.8, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 1.8, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEast4" type="CSGCylinder3D" parent="House" unique_id=1700001038]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.8, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.8, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWest4" type="CSGCylinder3D" parent="House" unique_id=1700001039]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.8, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.8, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthL4" type="CSGCylinder3D" parent="House" unique_id=1700001040]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.6750000000000003, 1.8, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 1.8, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorthR4" type="CSGCylinder3D" parent="House" unique_id=1700001041]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.6750000000000003, 1.8, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 1.8, 2.5)
 use_collision = true
 radius = 0.2
 height = 2.05
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouth5" type="CSGCylinder3D" parent="House" unique_id=1700001042]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.2, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.2, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEast5" type="CSGCylinder3D" parent="House" unique_id=1700001043]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.2, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.2, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWest5" type="CSGCylinder3D" parent="House" unique_id=1700001044]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.2, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.2, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorth5" type="CSGCylinder3D" parent="House" unique_id=1700001045]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.2, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.2, 2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogSouth6" type="CSGCylinder3D" parent="House" unique_id=1700001046]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.6, -2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.6, -2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogEast6" type="CSGCylinder3D" parent="House" unique_id=1700001047]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.6, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.6, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogWest6" type="CSGCylinder3D" parent="House" unique_id=1700001048]
-transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.6, 0.0)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.6, 0)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="LogNorth6" type="CSGCylinder3D" parent="House" unique_id=1700001049]
-transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0.0, 2.6, 2.5)
-material = SubResource("StandardMaterial3D_log")
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.6, 2.5)
 use_collision = true
 radius = 0.2
 height = 5.4
-sides = 8
+material = SubResource("StandardMaterial3D_log")
 
 [node name="RoofTier0" type="CSGBox3D" parent="House" unique_id=1700001051]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.95, 0)
-material = SubResource("StandardMaterial3D_roof")
 use_collision = true
 size = Vector3(5.8, 0.3, 5.8)
+material = SubResource("StandardMaterial3D_roof")
 
 [node name="RoofTier1" type="CSGBox3D" parent="House" unique_id=1700001052]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
-material = SubResource("StandardMaterial3D_roof")
 use_collision = true
 size = Vector3(4.4, 0.3, 4.4)
+material = SubResource("StandardMaterial3D_roof")
 
 [node name="RoofTier2" type="CSGBox3D" parent="House" unique_id=1700001053]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.55, 0)
-material = SubResource("StandardMaterial3D_roof")
 use_collision = true
-size = Vector3(3.0, 0.3, 3.0)
+size = Vector3(3, 0.3, 3)
+material = SubResource("StandardMaterial3D_roof")
 
 [node name="RoofTier3" type="CSGBox3D" parent="House" unique_id=1700001054]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.85, 0)
-material = SubResource("StandardMaterial3D_roof")
 use_collision = true
 size = Vector3(1.6, 0.3, 1.6)
+material = SubResource("StandardMaterial3D_roof")
+
+[node name="House2" type="Node3D" parent="." unique_id=1827518995]
+transform = Transform3D(0.6422682, 0, -0.76648, 0, 1, 0, 0.76648, 0, 0.6422682, 9.927109, 0, -0.82315683)
+
+[node name="LogSouthF3" type="CSGCylinder3D" parent="House2" unique_id=137869358]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, -1, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEastF3" type="CSGCylinder3D" parent="House2" unique_id=1951502004]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -1, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWestF3" type="CSGCylinder3D" parent="House2" unique_id=473662151]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -1, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthLF3" type="CSGCylinder3D" parent="House2" unique_id=2126112863]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, -1, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthRF3" type="CSGCylinder3D" parent="House2" unique_id=2043442690]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, -1, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouthF2" type="CSGCylinder3D" parent="House2" unique_id=686771896]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, -0.6, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEastF2" type="CSGCylinder3D" parent="House2" unique_id=989542486]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.6, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWestF2" type="CSGCylinder3D" parent="House2" unique_id=2095138391]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.6, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthLF2" type="CSGCylinder3D" parent="House2" unique_id=413078239]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, -0.6, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthRF2" type="CSGCylinder3D" parent="House2" unique_id=1088105591]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, -0.6, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouthF1" type="CSGCylinder3D" parent="House2" unique_id=1324313723]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, -0.2, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEastF1" type="CSGCylinder3D" parent="House2" unique_id=942232201]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, -0.2, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWestF1" type="CSGCylinder3D" parent="House2" unique_id=1018024211]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, -0.2, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthLF1" type="CSGCylinder3D" parent="House2" unique_id=523182069]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, -0.2, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthRF1" type="CSGCylinder3D" parent="House2" unique_id=924436535]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, -0.2, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouth0" type="CSGCylinder3D" parent="House2" unique_id=754806]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 0.2, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEast0" type="CSGCylinder3D" parent="House2" unique_id=1331795455]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.2, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWest0" type="CSGCylinder3D" parent="House2" unique_id=151605518]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.2, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthL0" type="CSGCylinder3D" parent="House2" unique_id=446891605]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 0.2, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthR0" type="CSGCylinder3D" parent="House2" unique_id=543500651]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 0.2, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouth1" type="CSGCylinder3D" parent="House2" unique_id=2126522048]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 0.6, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEast1" type="CSGCylinder3D" parent="House2" unique_id=1230655554]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 0.6, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWest1" type="CSGCylinder3D" parent="House2" unique_id=2075396661]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 0.6, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthL1" type="CSGCylinder3D" parent="House2" unique_id=1202014572]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 0.6, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthR1" type="CSGCylinder3D" parent="House2" unique_id=331760830]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 0.6, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouth2" type="CSGCylinder3D" parent="House2" unique_id=1449251645]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 1, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEast2" type="CSGCylinder3D" parent="House2" unique_id=1809045411]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWest2" type="CSGCylinder3D" parent="House2" unique_id=1824612253]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthL2" type="CSGCylinder3D" parent="House2" unique_id=1334509377]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 1, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthR2" type="CSGCylinder3D" parent="House2" unique_id=1307557207]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 1, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouth3" type="CSGCylinder3D" parent="House2" unique_id=1030760257]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 1.4, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEast3" type="CSGCylinder3D" parent="House2" unique_id=2012838250]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.4, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWest3" type="CSGCylinder3D" parent="House2" unique_id=1601842557]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.4, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthL3" type="CSGCylinder3D" parent="House2" unique_id=483623498]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 1.4, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthR3" type="CSGCylinder3D" parent="House2" unique_id=356057960]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 1.4, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouth4" type="CSGCylinder3D" parent="House2" unique_id=1493559078]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 1.8, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEast4" type="CSGCylinder3D" parent="House2" unique_id=2139268430]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 1.8, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWest4" type="CSGCylinder3D" parent="House2" unique_id=632251468]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 1.8, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthL4" type="CSGCylinder3D" parent="House2" unique_id=1942232281]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, -1.675, 1.8, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorthR4" type="CSGCylinder3D" parent="House2" unique_id=1147840725]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 1.675, 1.8, 2.5)
+use_collision = true
+radius = 0.2
+height = 2.05
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouth5" type="CSGCylinder3D" parent="House2" unique_id=1348611279]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.2, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEast5" type="CSGCylinder3D" parent="House2" unique_id=1992164008]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.2, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWest5" type="CSGCylinder3D" parent="House2" unique_id=2019686073]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.2, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorth5" type="CSGCylinder3D" parent="House2" unique_id=1640227540]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.2, 2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogSouth6" type="CSGCylinder3D" parent="House2" unique_id=1292901555]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.6, -2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogEast6" type="CSGCylinder3D" parent="House2" unique_id=535859490]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, 2.5, 2.6, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogWest6" type="CSGCylinder3D" parent="House2" unique_id=861807218]
+transform = Transform3D(1, 0, 0, 0, 6.12323e-17, 1, 0, -1, 6.12323e-17, -2.5, 2.6, 0)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="LogNorth6" type="CSGCylinder3D" parent="House2" unique_id=188708018]
+transform = Transform3D(6.12323e-17, 1, 0, -1, 6.12323e-17, 0, 0, 0, 1, 0, 2.6, 2.5)
+use_collision = true
+radius = 0.2
+height = 5.4
+material = SubResource("StandardMaterial3D_log")
+
+[node name="RoofTier0" type="CSGBox3D" parent="House2" unique_id=102911426]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.95, 0)
+use_collision = true
+size = Vector3(5.8, 0.3, 5.8)
+material = SubResource("StandardMaterial3D_roof")
+
+[node name="RoofTier1" type="CSGBox3D" parent="House2" unique_id=496883086]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
+use_collision = true
+size = Vector3(4.4, 0.3, 4.4)
+material = SubResource("StandardMaterial3D_roof")
+
+[node name="RoofTier2" type="CSGBox3D" parent="House2" unique_id=694102561]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.55, 0)
+use_collision = true
+size = Vector3(3, 0.3, 3)
+material = SubResource("StandardMaterial3D_roof")
+
+[node name="RoofTier3" type="CSGBox3D" parent="House2" unique_id=805215740]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.85, 0)
+use_collision = true
+size = Vector3(1.6, 0.3, 1.6)
+material = SubResource("StandardMaterial3D_roof")
 
 [node name="Petya" type="Node3D" parent="." unique_id=300100050]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 0, -1.2)
+transform = Transform3D(-0.63661444, 0, 0.7711823, 0, 1, 0, -0.7711823, 0, -0.63661444, 9.977935, -0.3042916, -0.47349024)
 script = ExtResource("14_petya")
 
 [node name="DropZone" type="MeshInstance3D" parent="Petya" unique_id=300100051]
-position = Vector3(-0.9, 0.02, 0.3)
-rotation_degrees = Vector3(-90, 0, 0)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -0.9, 0.02, 0.3)
+cast_shadow = 0
 mesh = SubResource("QuadMesh_dropzone")
 surface_material_override/0 = SubResource("StandardMaterial3D_dropzone")
-cast_shadow = 0
 
 [node name="Axe" type="RigidBody3D" parent="." unique_id=300100030]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.366, 0.0546, -0.54)
 freeze = true
 
-[node name="AxeMesh" type="MeshInstance3D" parent="Axe"]
+[node name="AxeMesh" type="MeshInstance3D" parent="Axe" unique_id=398792616]
 transform = Transform3D(-0.02257, 0, -0.022684, 0, 0.032, 0, 0.022684, 0, -0.02257, 0, 0, 0)
 mesh = ExtResource("13_axe")
 
@@ -715,10 +1027,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 use_collision = true
 size = Vector3(1, 0.7, 0.4)
 
-[node name="Torch" type="Node3D" parent="." unique_id=300100080]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.8, -6.0)
-script = ExtResource("18_torch")
-
 [node name="Glow" type="OmniLight3D" parent="Fireplace" unique_id=300100012]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0.3)
 visible = false
@@ -729,8 +1037,11 @@ omni_range = 4.5
 
 [node name="Chimney" type="CSGCylinder3D" parent="Fireplace" unique_id=300100013]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
-material = SubResource("StandardMaterial3D_chimney")
 use_collision = true
 radius = 0.16
 height = 3.6
-sides = 8
+material = SubResource("StandardMaterial3D_chimney")
+
+[node name="Torch" type="Node3D" parent="." unique_id=300100080]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.8, -6)
+script = ExtResource("18_torch")
