@@ -103,14 +103,22 @@ def ask_ollama(user_text: str, quest_context: str) -> str:
 
 def synthesize(text: str) -> bytes:
     out_path = tempfile.mktemp(suffix=".wav")
+    in_path = tempfile.mktemp(suffix=".txt")
+    with open(in_path, "w", encoding="utf-8") as f:
+        f.write(text)
     try:
         # "python -m piper", а не команда "piper" напрямую - pip install piper-tts
         # кладёт piper.exe в папку Scripts, которая часто не добавлена в PATH
         # (та же история, что и с остальными пакетами при установке requirements.txt);
-        # sys.executable -m piper работает всегда, независимо от PATH
+        # sys.executable -m piper работает всегда, независимо от PATH.
+        #
+        # Текст передаём через --input-file, а не через stdin - у piper-tts 1.8+
+        # (в отличие от более старых версий) нет надёжного чтения текста из stdin,
+        # из-за чего он озвучивал что-то по умолчанию, а не реальный текст ответа -
+        # результат был одинаковым "мусором" независимо от того, что сказал игрок
         subprocess.run(
-            [sys.executable, "-m", "piper", "--model", PIPER_VOICE, "--output_file", out_path],
-            input=text.encode("utf-8"),
+            [sys.executable, "-m", "piper", "--model", PIPER_VOICE,
+             "--input-file", in_path, "--output_file", out_path],
             check=True,
             capture_output=True,
         )
@@ -119,6 +127,8 @@ def synthesize(text: str) -> bytes:
     finally:
         if os.path.exists(out_path):
             os.remove(out_path)
+        if os.path.exists(in_path):
+            os.remove(in_path)
 
 
 @app.route("/talk", methods=["POST"])
