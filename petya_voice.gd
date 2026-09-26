@@ -276,6 +276,41 @@ func _get_landmarks() -> Array:
 		landmarks.append({"name": "топор", "keyword": "топор", "pos": player.axe_node.global_position})
 	if is_instance_valid(player.torch_node):
 		landmarks.append({"name": "факел на стене", "keyword": "факел", "pos": player.torch_node.global_position})
+	if is_instance_valid(petya_node) and petya_node.has_node("DropZone"):
+		landmarks.append({"name": "коврик для сдачи заданий у Пети", "keyword": "коврик",
+			"pos": petya_node.get_node("DropZone").global_position})
+
+	# ближайшее дерево, которое прямо сейчас можно рубить (не на кулдауне после
+	# срубки) - CHOP_TREES это список путей в main.gd, tree_cooldowns у snow_sync
+	# хранит, какие из них ещё не выросли обратно
+	var main = get_tree().current_scene
+	var best_tree_pos = null
+	var best_tree_dist = INF
+	for tree_path in main.CHOP_TREES:
+		if player.snow_sync.tree_cooldowns.has(tree_path):
+			continue
+		var t = main.get_node_or_null(tree_path)
+		if t:
+			var d = player.global_position.distance_to(t.global_position)
+			if d < best_tree_dist:
+				best_tree_dist = d
+				best_tree_pos = t.global_position
+	if best_tree_pos != null:
+		landmarks.append({"name": "ближайшее дерево для рубки", "keyword": "дерев", "pos": best_tree_pos})
+
+	# ближайшая курица - у них нет фиксированного места, бродят, поэтому просто
+	# берём того, кто сейчас реально ближе всех к игроку
+	var best_chicken_pos = null
+	var best_chicken_dist = INF
+	for c in get_tree().get_nodes_in_group("chicken"):
+		if is_instance_valid(c) and c.is_inside_tree():
+			var d = player.global_position.distance_to(c.global_position)
+			if d < best_chicken_dist:
+				best_chicken_dist = d
+				best_chicken_pos = c.global_position
+	if best_chicken_pos != null:
+		landmarks.append({"name": "ближайшая курица", "keyword": "кур", "pos": best_chicken_pos})
+
 	return landmarks
 
 # --- квестовый контекст: чтобы Петя знал, что уже сделано, а что ещё нет,
@@ -317,12 +352,32 @@ func _compass_direction(from: Vector3, to: Vector3) -> String:
 func _build_spatial_context() -> String:
 	var pos = player.global_position
 	var day_night = get_tree().current_scene.get_node_or_null("DayNight")
+	var sync = player.snow_sync
 	var lines = ["Где сейчас игрок и что вокруг (используй, если спросят, где что-то",
 		"находится или куда идти - отвечай направлением и примерным расстоянием):"]
 	lines.append("- Игрок сейчас %s, сейчас %s" % [
 		"в доме" if player._is_indoors(pos) else "на улице",
 		"ночь" if (day_night and day_night.is_night) else "день",
 	])
+
+	# состояние игрока - чтобы Петя мог сам заметить и отреагировать (например,
+	# забеспокоиться, если игрок сильно замёрз), а не только отвечать на прямые вопросы
+	if player.warmth < 20:
+		lines.append("- Игрок сильно замёрз (тепло критически низкое) - если уместно, забеспокойся об этом")
+	elif player.warmth < 50:
+		lines.append("- Игроку прохладно (тепло среднее)")
+	else:
+		lines.append("- Игроку тепло, замерзать не должен")
+	if player.hp < 30:
+		lines.append("- У игрока мало здоровья - он в опасности")
+
+	if sync.blizzard_active:
+		lines.append("- Прямо сейчас на улице метель - если игрок собирается выйти, стоит предупредить")
+
+	if sync.fireplace_lit:
+		lines.append("- Камин в доме горит, дров хватит примерно на %d сек" % int(sync.fireplace_fuel))
+	else:
+		lines.append("- Камин в доме сейчас потух")
 
 	var landmarks = _get_landmarks()
 	if is_instance_valid(petya_node):
