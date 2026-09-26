@@ -243,25 +243,35 @@ func _build_wav_bytes(pcm: PackedByteArray, channels: int, sample_rate: int, bit
 	out.append_array(pcm)
 	return out
 
-# ищет чанк "data" явно, а не считает его всегда начинающимся с байта 44 - у
-# некоторых энкодеров (в т.ч. иногда у Piper) перед ним попадаются доп. чанки
+# ищет И "fmt " (частота/каналы/биты), И "data" по всему файлу, а не по
+# фиксированным байтовым смещениям - раньше channels/sample_rate/bits читались
+# из позиций 22/24/34 в предположении, что "fmt " всегда идёт сразу после "WAVE"
+# 16-байтным куском; если у Piper (или конкретной версии/сборки) порядок чанков
+# другой или fmt-чанк длиннее (расширенный формат) - в channels/sample_rate
+# попадал мусор, из-за чего звук проигрывался на неверной скорости/частоте и
+# превращался в нечленораздельную "кашу"
 func _audio_stream_from_wav(bytes: PackedByteArray) -> AudioStreamWAV:
-	if bytes.size() < 44:
+	if bytes.size() < 12:
 		return null
-	var channels = bytes.decode_u16(22)
-	var sample_rate = bytes.decode_u32(24)
-	var bits_per_sample = bytes.decode_u16(34)
+	var channels = 1
+	var sample_rate = 22050
+	var bits_per_sample = 16
 	var pos = 12
 	var data_offset = -1
 	var data_size = 0
 	while pos + 8 <= bytes.size():
 		var chunk_id = bytes.slice(pos, pos + 4).get_string_from_ascii()
 		var chunk_size = bytes.decode_u32(pos + 4)
-		if chunk_id == "data":
-			data_offset = pos + 8
+		var body = pos + 8
+		if chunk_id == "fmt " and body + 16 <= bytes.size():
+			channels = bytes.decode_u16(body + 2)
+			sample_rate = bytes.decode_u32(body + 4)
+			bits_per_sample = bytes.decode_u16(body + 14)
+		elif chunk_id == "data":
+			data_offset = body
 			data_size = chunk_size
 			break
-		pos += 8 + chunk_size + (chunk_size % 2)
+		pos = body + chunk_size + (chunk_size % 2)
 	if data_offset == -1 or data_offset + data_size > bytes.size():
 		return null
 	var stream = AudioStreamWAV.new()
