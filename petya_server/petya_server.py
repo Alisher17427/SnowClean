@@ -51,9 +51,11 @@ PIPER_VOICE = os.path.join(os.path.dirname(__file__), "ru_RU-ruslan-medium.onnx"
 app = Flask(__name__)
 whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
 
-# общая история разговора - простая (один NPC, без разделения по игрокам);
-# обрезаем, чтобы не раздувать контекст до бесконечности
-conversation_history = []
+# история разговора - отдельная на каждого игрока (по player_id, который шлёт
+# игра), а не одна общая на всех: иначе в кооперативе, если по очереди говорят
+# двое, Петя путает, кто ему что говорил, и отвечает как будто продолжает
+# разговор с другим человеком. Обрезаем на каждого, чтобы не раздувать контекст
+conversation_history_by_player = {}   # player_id (str) -> [{"role":..,"content":..}, ...]
 MAX_HISTORY_MESSAGES = 16
 
 SYSTEM_PROMPT = """Ты - Петя, персонаж в кооперативной игре про выживание в снегу.
@@ -76,9 +78,10 @@ markdown-разметки, без списков, как будто это ре�
 но не переключайся на английский."""
 
 
-def build_messages(user_text: str, quest_context: str) -> list:
+def build_messages(player_id: str, user_text: str, quest_context: str) -> list:
+    history = conversation_history_by_player.setdefault(player_id, [])
     messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\n" + quest_context}]
-    messages.extend(conversation_history[-MAX_HISTORY_MESSAGES:])
+    messages.extend(history[-MAX_HISTORY_MESSAGES:])
     messages.append({"role": "user", "content": user_text})
     return messages
 
@@ -88,10 +91,10 @@ def transcribe(wav_path: str) -> str:
     return " ".join(seg.text for seg in segments).strip()
 
 
-def ask_ollama(user_text: str, quest_context: str) -> str:
+def ask_ollama(player_id: str, user_text: str, quest_context: str) -> str:
     resp = requests.post(OLLAMA_URL, json={
         "model": OLLAMA_MODEL,
-        "messages": build_messages(user_text, quest_context),
+        "messages": build_messages(player_id, user_text, quest_context),
         "stream": False,
         # ниже температура - меньше случайных "фантазий" и переключений на
         # английский у маленькой модели (по умолчанию 0.8, здесь поспокойнее)
@@ -136,6 +139,7 @@ def talk():
     data = request.get_json(force=True)
     audio_b64 = data.get("audio_b64", "")
     quest_context = data.get("quest_context", "")
+    player_id = str(data.get("player_id", "unknown"))
     if not audio_b64:
         return jsonify({"error": "no audio_b64"}), 400
 
@@ -152,12 +156,13 @@ def talk():
         return jsonify({"user_text": "", "reply_text": "", "reply_audio_b64": ""})
 
     try:
-        reply_text = ask_ollama(user_text, quest_context)
+        reply_text = ask_ollama(player_id, user_text, quest_context)
     except Exception as e:
         return jsonify({"error": "ollama: %s" % e}), 502
 
-    conversation_history.append({"role": "user", "content": user_text})
-    conversation_history.append({"role": "assistant", "content": reply_text})
+    history = conversation_history_by_player.setdefault(player_id, [])
+    history.append({"role": "user", "content": user_text})
+    history.append({"role": "assistant", "content": reply_text})
 
     try:
         reply_audio = synthesize(reply_text)

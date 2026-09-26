@@ -7,8 +7,9 @@ extends Node
 # (Piper TTS) - обратно приходит уже готовый звук + текст для субтитров.
 #
 # Сам ИИ живёт целиком на сервере - эта игра только записывает голос, шлёт его,
-# получает ответ и проигрывает. Личный, локальный визуал/звук у каждого игрока -
-# по сети (другим игрокам) сейчас НЕ транслируется, как и температура/голод.
+# получает ответ и проигрывает. Ответ рассылается ВСЕМ игрокам (см. petya_dialogue
+# в snow_sync.gd и show_dialogue ниже) - разговор с Петей слышат и видят все, не
+# только тот, кто спросил (в отличие от температуры/голода - те личные).
 #
 # Адрес сервера хранится в user://petya_ai_server.cfg - этот файл не в git
 # (в отличие от кода игры, у каждого свой сервер/IP). Если файла ещё нет,
@@ -164,6 +165,9 @@ func _stop_recording_and_send():
 	var body = JSON.stringify({
 		"audio_b64": Marshalls.raw_to_base64(wav_bytes),
 		"quest_context": _build_quest_context(),
+		# отдельная история разговора на каждого игрока на сервере - без этого,
+		# если оба игрока по очереди говорят с Петей, он путает, кто что сказал
+		"player_id": str(multiplayer.get_unique_id()),
 	})
 	var url = "http://%s:%d/talk" % [server_host, server_port]
 	waiting_for_reply = true
@@ -189,9 +193,23 @@ func _on_request_completed(result, response_code, _headers, body):
 	if reply_text == "":
 		_show_subtitle("Петя не разобрал, что ты сказал")
 		return
-	_show_subtitle("Вы: %s\n\nПетя: %s" % [user_text, reply_text])
-	if reply_audio_b64 != "":
-		var stream = _audio_stream_from_wav(Marshalls.base64_to_raw(reply_audio_b64))
+
+	# рассылаем всем игрокам (не только себе) - иначе разговор с Петей слышит и
+	# видит только тот, кто с ним говорит, хотя в кооперативе рядом может стоять
+	# другой игрок. PackedByteArray, а не base64-строка - для RPC внутри игры
+	# кодировка ни к чему, base64 нужен был только для JSON до Python-сервера
+	var reply_audio = Marshalls.base64_to_raw(reply_audio_b64) if reply_audio_b64 != "" else PackedByteArray()
+	var speaker_name = player.nickname if player.nickname != "" else "Игрок"
+	player.snow_sync.petya_dialogue.rpc(multiplayer.get_unique_id(), speaker_name, user_text, reply_text, reply_audio)
+
+# вызывается через RPC у КАЖДОГО игрока (см. petya_dialogue в snow_sync.gd) -
+# и у того, кто спросил, и у всех остальных рядом; speaker_id сравнивается со
+# своим id, чтобы подписать реплику "Вы" только у реального автора вопроса
+func show_dialogue(speaker_id: int, speaker_name: String, user_text: String, reply_text: String, reply_audio: PackedByteArray):
+	var who = "Вы" if speaker_id == multiplayer.get_unique_id() else speaker_name
+	_show_subtitle("%s: %s\n\nПетя: %s" % [who, user_text, reply_text])
+	if reply_audio.size() > 0:
+		var stream = _audio_stream_from_wav(reply_audio)
 		if stream and is_instance_valid(petya_node):
 			reply_player.global_position = petya_node.global_position + Vector3(0, 1.5, 0)
 			reply_player.stream = stream
