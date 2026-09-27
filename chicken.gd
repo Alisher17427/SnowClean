@@ -45,9 +45,9 @@ func _random_outside_point() -> Vector3:
 func _pick_wander_target():
 	wander_t = randf_range(2.5, 5.0)
 	target = Vector3(
-		clamp(global_position.x + randf_range(-WANDER_RADIUS, WANDER_RADIUS), HOUSE_MIN.x + 0.4, HOUSE_MAX.x - 0.4),
+		clamp(global_position.x + randf_range(-WANDER_RADIUS, WANDER_RADIUS), HOUSE_MIN.x + 1.0, HOUSE_MAX.x - 1.0),
 		0.0,
-		clamp(global_position.z + randf_range(-WANDER_RADIUS, WANDER_RADIUS), HOUSE_MIN.z + 0.4, HOUSE_MAX.z - 0.4)
+		clamp(global_position.z + randf_range(-WANDER_RADIUS, WANDER_RADIUS), HOUSE_MIN.z + 1.0, HOUSE_MAX.z - 1.0)
 	)
 
 func _move_toward_point(dest: Vector3, delta: float):

@@ -3,7 +3,7 @@ extends SubViewport
 # Маска очистки. Копки приходят очередью (свои и чужие) и рисуются кистями из пула:
 # каждая кисть видна ровно один кадр, поэтому один взмах = один отпечаток.
 
-@export var field_size = 64.0  # совпадает с Size у PlaneMesh снежного поля
+@export var field_size = 256  # совпадает с Size у PlaneMesh снежного поля
 @onready var clear_brush = $ClearBrush
 
 const POOL_SIZE = 16

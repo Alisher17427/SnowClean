@@ -61,8 +61,6 @@ void vertex() {
 	vec2 m = masks_blurred(UV);
 	float rem = snow_remaining(UV, m.x, m.y);
 	VERTEX.y -= ground_depth * (1.0 - rem);
-	// на голой земле следы тоже остаются вмятинами
-	VERTEX.y -= ground_press * m.y * (1.0 - smoothstep(0.0, 0.15, rem));
 }
 
 void fragment() {
@@ -73,8 +71,9 @@ void fragment() {
 	// глубокий снег белее, тонкий слой - серовато-голубой
 	vec3 color = mix(thin_snow_color.rgb, snow_color.rgb, smoothstep(0.2, 1.0, rem));
 	color = mix(color, trampled_color.rgb, clamp(trample_val, 0.0, 1.0) * 0.8);
-	// у самой земли снег редеет и проступает земля; на земле остаются тёмные следы
-	vec3 ground = mix(ground_color.rgb, ground_print_color.rgb, clamp(trample_val * 1.5, 0.0, 1.0));
+	// на голой земле недавний след виден как светлое пятно (занесённый снег/слякоть) -
+	// сама текстура следов постепенно затухает со временем, так что он не навечно
+	vec3 ground = mix(ground_color.rgb, vec3(0.95, 0.96, 0.98), clamp(trample_val * 1.3, 0.0, 1.0));
 	color = mix(ground, color, smoothstep(0.0, 0.12, rem));
 	ALBEDO = color;
 	ROUGHNESS = 0.9;

@@ -675,6 +675,12 @@ func _update_interact_hint(delta: float):
 			text = "Нужен топор"
 		else:
 			text = "[E]   Рубить дерево"
+	elif result and result.collider.is_in_group("tower"):
+		var tower_path = str(get_tree().current_scene.get_path_to(result.collider))
+		if snow_sync.tower_broken.get(tower_path, false):
+			text = "[T]   Починить вышку"
+		else:
+			text = "Вышка исправна"
 	elif result and result.collider.is_in_group("snow"):
 		text = "[ЛКМ]   Убрать кучу снега"
 	elif result and result.collider.is_in_group("chicken") and global_position.distance_to(result.collider.global_position) <= CHICKEN_PICKUP_RADIUS:
@@ -749,6 +755,19 @@ func _update_chicken_hold(delta: float):
 		held_chicken_path = ""
 		chicken_throw_charge_t = 0.0
 	chicken_rmb_was_down = rmb_down
+
+func _update_tower_repair():
+	if input_locked or not Input.is_action_just_pressed("repair_tower"):
+		return
+	var space_state = get_world_3d().direct_space_state
+	var from = camera.global_position
+	var to = from + (-camera.global_transform.basis.z) * 3.0
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	var result = space_state.intersect_ray(query)
+	if result and result.collider.is_in_group("tower"):
+		var path = str(get_tree().current_scene.get_path_to(result.collider))
+		if snow_sync.tower_broken.get(path, false):
+			snow_sync.repair_tower.rpc(path)
 
 # снег вокруг игрока, падающий сверху вниз; привязан к телу игрока (не к камере),
 # чтобы не наклонялся вместе со взглядом при движении головой вверх/вниз
@@ -970,6 +989,7 @@ func _physics_process(delta):
 		_update_snowfall()
 		if snow_sync:
 			snow_sync.update_wind_indoor(_is_indoors(global_position), delta)
+		_update_tower_repair()
 		_update_chicken_hold(delta)
 		_update_torch_flicker(delta)
 		_update_interact_hint(delta)

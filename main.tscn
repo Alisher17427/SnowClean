@@ -19,6 +19,7 @@
 [ext_resource type="Script" uid="uid://cmbp3fysg1xv1" path="res://day_night.gd" id="17_daynight"]
 [ext_resource type="Script" uid="uid://05x8le2mnttt" path="res://torch.gd" id="18_torch"]
 [ext_resource type="Script" uid="uid://c3bt4gulreaf6" path="res://tree_wind.gd" id="19_wind"]
+[ext_resource type="PackedScene" uid="uid://byuu6upc67g0q" path="res://tower.tscn" id="20_82xsv"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sun"]
 sky_top_color = Color(0.33, 0.5, 0.78, 1)
@@ -40,13 +41,13 @@ glow_intensity = 0.5
 glow_bloom = 0.05
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ntbkr"]
-size = Vector3(64, 0.2, 64)
+size = Vector3(256, 0.2, 256)
 
 [sub_resource type="BoxMesh" id="BoxMesh_rub7e"]
-size = Vector3(64, 0.2, 64)
+size = Vector3(256, 0.2, 256)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_rub7e"]
-size = Vector2(64, 64)
+size = Vector2(256, 256)
 subdivide_width = 960
 subdivide_depth = 960
 
@@ -177,11 +178,12 @@ script = ExtResource("2_0xm2m")
 
 [node name="ClearBrush" type="Sprite2D" parent="SnowMaskViewport" unique_id=798909288]
 modulate = Color(1, 1, 1, 0.5)
+scale = Vector2(0.25, 0.25)
 texture = SubResource("GradientTexture2D_rub7e")
 
 [node name="SnowTrampleViewport" type="SubViewport" parent="." unique_id=724928543]
 transparent_bg = true
-size = Vector2i(2048, 2048)
+size = Vector2i(4096, 4096)
 render_target_clear_mode = 1
 script = ExtResource("3_trample")
 
@@ -1048,3 +1050,6 @@ material = SubResource("StandardMaterial3D_chimney")
 [node name="Torch" type="Node3D" parent="." unique_id=300100080]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.8, -6)
 script = ExtResource("18_torch")
+
+[node name="Tower" parent="." unique_id=2139413722 instance=ExtResource("20_82xsv")]
+transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.05, 0, 0, 103.33757)

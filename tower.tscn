@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://byuu6upc67g0q"]
+
+[ext_resource type="Script" uid="uid://cgoswmpsf0ttl" path="res://tower.gd" id="1_vedim"]
+[ext_resource type="PackedScene" uid="uid://djbeyks7twl2i" path="res://models/radio_tower.glb" id="2_stebd"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ryguw"]
+size = Vector3(150, 150, 150)
+
+[node name="Tower" type="Node3D" unique_id=2139413722]
+transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.05, 0, 0, 0)
+script = ExtResource("1_vedim")
+
+[node name="Sketchfab_Scene" parent="." unique_id=805715798 instance=ExtResource("2_stebd")]
+transform = Transform3D(0.9999619, 0, -0.008726535, 0, 1, 0, 0.008726535, 0, 0.9999619, 0, 0, 0)
+
+[node name="Collision" type="StaticBody3D" parent="." unique_id=546829811]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Collision" unique_id=1553835827]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4288235, 0)
+shape = SubResource("BoxShape3D_ryguw")

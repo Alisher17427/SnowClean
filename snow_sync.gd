@@ -491,7 +491,7 @@ func close_achievements_screen():
 	achievements_dim.visible = false
 	achievements_closed.emit()
 
-const FIELD_SIZE = 64.0
+const FIELD_SIZE = 256
 const NOISE_SCALE = 12.0
 const MIN_THICKNESS = 0.4
 var clear_grid = {}   # Vector2i -> 0..1: сколько снега уже расчищено в этой клетке (1 м)
@@ -514,14 +514,65 @@ const WIND_FADE_SPEED = 12.0    # дБ/сек, скорость перехода
 # анимация нарастания/спада, и не требует ежекадровой сети
 var blizzard_active: bool = false
 var blizzard_intensity: float = 0.0     # 0..1, куда тянется у каждого клиента локально
-var blizzard_timer: float = 0.0         # только на хосте: секунд до следующей смены состояния
-const BLIZZARD_INTERVAL_MIN = 100.0     # сек затишья между метелями
-const BLIZZARD_INTERVAL_MAX = 200.0
-const BLIZZARD_DURATION_MIN = 25.0      # сколько длится сама метель
-const BLIZZARD_DURATION_MAX = 45.0
 const BLIZZARD_FADE_SPEED = 0.35        # скорость нарастания/спада интенсивности, ед/сек
 const BLIZZARD_WIND_BOOST_DB = 9.0      # насколько метель добавляет громкости ветру
 const BLIZZARD_FOG_DENSITY = 0.05       # плотность тумана-снегопада в полную силу метели
+const BLIZZARD_END_DELAY = 5.0          # после починки всех вышек буря ещё столько сек не начинает стихать
+var blizzard_end_timer: float = -1.0    # только на хосте: обратный отсчёт до начала стихания (-1 = не запущен)
+
+var tower_broken: Dictionary = {}       # tower_path -> bool (true = сломана)
+var tower_timer: Dictionary = {}        # tower_path -> секунд до поломки (считает только хост, пока исправна)
+var tower_broken_time: Dictionary = {}  # tower_path -> секунд с момента поломки (считает только хост, пока сломана)
+const TOWER_BREAK_TIME = 120.0          # сколько вышка работает без поломки
+const TOWER_BLIZZARD_GRACE = 30.0       # сколько есть времени на починку после поломки, пока не началась буря
+
+func _register_towers():
+	for t in get_tree().get_nodes_in_group("tower"):
+		var path = str(get_parent().get_path_to(t))
+		tower_broken[path] = false
+		if multiplayer.is_server():
+			tower_timer[path] = TOWER_BREAK_TIME
+			tower_broken_time[path] = 0.0
+
+func _any_tower_overdue() -> bool:
+	for tower_path in tower_broken.keys():
+		if tower_broken[tower_path] and tower_broken_time.get(tower_path, 0.0) >= TOWER_BLIZZARD_GRACE:
+			return true
+	return false
+
+func _update_towers(delta: float):
+	if not multiplayer.is_server():
+		return
+	for tower_path in tower_timer.keys():
+		if tower_broken.get(tower_path, false):
+			tower_broken_time[tower_path] = tower_broken_time.get(tower_path, 0.0) + delta
+		else:
+			tower_timer[tower_path] -= delta
+			if tower_timer[tower_path] <= 0.0:
+				_break_tower.rpc(tower_path)
+
+@rpc("any_peer", "call_local", "reliable")
+func _break_tower(tower_path: String):
+	if tower_broken.get(tower_path, false):
+		return
+	tower_broken[tower_path] = true
+	tower_broken_time[tower_path] = 0.0
+	var collision_node = get_parent().get_node_or_null(tower_path)
+	var node = collision_node.get_parent() if collision_node else null
+	if node and node.has_method("set_broken"):
+		node.set_broken(true)
+
+@rpc("any_peer", "call_local", "reliable")
+func repair_tower(tower_path: String):
+	if not tower_broken.get(tower_path, false):
+		return
+	tower_broken[tower_path] = false
+	tower_timer[tower_path] = TOWER_BREAK_TIME
+	tower_broken_time[tower_path] = 0.0
+	var collision_node = get_parent().get_node_or_null(tower_path)
+	var node = collision_node.get_parent() if collision_node else null
+	if node and node.has_method("set_broken"):
+		node.set_broken(false)
 
 func _ready():
 	step_sounds = preload("res://step_clips.gd").make_streams()   # настоящие записи шагов
@@ -536,8 +587,7 @@ func _ready():
 	wind_player.volume_db = WIND_OUTSIDE_DB
 	wind_player.autoplay = true
 	add_child(wind_player)
-	# первая метель - через случайный интервал после старта игры; считает только хост
-	blizzard_timer = randf_range(BLIZZARD_INTERVAL_MIN, BLIZZARD_INTERVAL_MAX)
+	_register_towers()
 	_load_achievements()
 	_build_achievement_toast()
 	_build_achievements_screen()
@@ -573,6 +623,7 @@ func _process(delta):
 			_melt_house_snow()
 	_update_tree_cooldowns(delta)
 	_update_snowballs(delta)
+	_update_towers(delta)
 	_update_blizzard(delta)
 	_update_achievement_toast(delta)
 	_update_ground_logs()
@@ -600,13 +651,19 @@ func _melt_house_snow():
 # у каждого клиента потом плавно доводится до 0 или 1 самостоятельно - см. ниже
 func _update_blizzard(delta: float):
 	if multiplayer.is_server():
-		blizzard_timer -= delta
-		if blizzard_timer <= 0.0:
-			if blizzard_active:
-				blizzard_timer = randf_range(BLIZZARD_INTERVAL_MIN, BLIZZARD_INTERVAL_MAX)
+		var overdue = _any_tower_overdue()
+		if overdue:
+			blizzard_end_timer = -1.0
+			if not blizzard_active:
+				_set_blizzard.rpc(true)
+		elif blizzard_active:
+			if blizzard_end_timer < 0.0:
+				blizzard_end_timer = BLIZZARD_END_DELAY
 			else:
-				blizzard_timer = randf_range(BLIZZARD_DURATION_MIN, BLIZZARD_DURATION_MAX)
-			_set_blizzard.rpc(not blizzard_active)
+				blizzard_end_timer -= delta
+				if blizzard_end_timer <= 0.0:
+					_set_blizzard.rpc(false)
+					blizzard_end_timer = -1.0
 
 	var target = 1.0 if blizzard_active else 0.0
 	blizzard_intensity = move_toward(blizzard_intensity, target, BLIZZARD_FADE_SPEED * delta)
@@ -794,6 +851,7 @@ func _play_at(sounds: Array, pos: Vector3, volume_db: float, pitch: float = 1.0)
 @rpc("any_peer", "call_local", "reliable")
 func dig(pos: Vector3):
 	snow_mask.request_dig(pos)
+	snow_trample.clear_at(pos)
 	_mark_clear_cpu(pos)
 	if multiplayer.is_server():
 		dig_history.append(pos)
@@ -951,10 +1009,10 @@ func petya_dialogue(speaker_id: int, speaker_name: String, user_text: String, re
 # разблокированные ачивки (иначе клиент, подключившийся посреди партии, увидел бы
 # в экране "Достижения" пустой список до следующей разблокировки, см. announce_achievement)
 func send_history(peer_id: int):
-	receive_history.rpc_id(peer_id, PackedVector3Array(dig_history), PackedVector4Array(print_history), removed_piles, fireplace_fuel, fireplace_lit, axe_taken, axe_ground_pos, tree_cooldowns.duplicate(), achievement_unlocked.duplicate(), quest_progress.duplicate(), quest_completed.duplicate(), quest_skipped.duplicate(), torch_taken, torch_on_ground, torch_ground_pos)
+	receive_history.rpc_id(peer_id, PackedVector3Array(dig_history), PackedVector4Array(print_history), removed_piles, fireplace_fuel, fireplace_lit, axe_taken, axe_ground_pos, tree_cooldowns.duplicate(), achievement_unlocked.duplicate(), quest_progress.duplicate(), quest_completed.duplicate(), quest_skipped.duplicate(), torch_taken, torch_on_ground, torch_ground_pos, tower_broken.duplicate())
 
 @rpc("authority", "reliable")
-func receive_history(digs: PackedVector3Array, print_list: PackedVector4Array, piles: Array, fuel: float, lit: bool, axe_gone: bool, axe_pos: Vector3, tree_state: Dictionary, unlocked_state: Dictionary, quest_progress_state: Dictionary, quest_completed_state: Dictionary, quest_skipped_state: Dictionary, torch_gone: bool, torch_ground: bool, torch_pos: Vector3):
+func receive_history(digs: PackedVector3Array, print_list: PackedVector4Array, piles: Array, fuel: float, lit: bool, axe_gone: bool, axe_pos: Vector3, tree_state: Dictionary, unlocked_state: Dictionary, quest_progress_state: Dictionary, quest_completed_state: Dictionary, quest_skipped_state: Dictionary, torch_gone: bool, torch_ground: bool, torch_pos: Vector3, tower_state: Dictionary):
 	for d in digs:
 		snow_mask.request_dig(d)
 		_mark_clear_cpu(d)
@@ -993,3 +1051,10 @@ func receive_history(digs: PackedVector3Array, print_list: PackedVector4Array, p
 	quest_progress = quest_progress_state.duplicate()
 	quest_completed = quest_completed_state.duplicate()
 	quest_skipped = quest_skipped_state.duplicate()
+	
+	for tower_path in tower_state.keys():
+		tower_broken[tower_path] = tower_state[tower_path]
+		var tower_collision = get_parent().get_node_or_null(tower_path)
+		var tower_node = tower_collision.get_parent() if tower_collision else null
+		if tower_node and tower_node.has_method("set_broken"):
+			tower_node.set_broken(tower_state[tower_path])
