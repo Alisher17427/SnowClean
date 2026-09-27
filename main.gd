@@ -24,7 +24,7 @@ var chicken_id_counter = 0
 # деревья из ранее добавленного декоративного леса, которые можно рубить на дрова
 # (остальной лес остаётся просто фоном); эти конкретные экземпляры на самом деле
 # висели в воздухе на ~2-3 м из-за старой расстановки - опускаем их на землю здесь же
-const CHOP_TREES = ["Forest/Forest2", "Forest/Forest6", "Forest/Forest7", "Forest/Tree_2Snow", "Forest/Forest5"]
+const CHOP_TREES = ["ForestGroup/Forest2", "ForestGroup/Forest6", "ForestGroup/Forest7", "ForestGroup/Tree_2Snow", "ForestGroup/Forest5"]
 
 var menu_layer: CanvasLayer
 var mode_box: VBoxContainer         # первый экран: одиночная игра / мультиплеер

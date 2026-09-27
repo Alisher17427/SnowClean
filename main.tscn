@@ -198,49 +198,52 @@ spawn_path = NodePath("../Chickens")
 [node name="SnowSync" type="Node" parent="." unique_id=676007772]
 script = ExtResource("5_sync")
 
-[node name="Forest" parent="." unique_id=1867360681 instance=ExtResource("6_7mycd")]
+[node name="ForestGroup" type="Node3D" parent="." unique_id=1867360690]
 transform = Transform3D(1, 0, 0, 0, 2.220446e-16, 1, 0, -1, 2.220446e-16, 16.286678, 3.1703444, 20.067883)
+
+[node name="Forest" parent="ForestGroup" unique_id=1867360681 instance=ExtResource("6_7mycd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 script = ExtResource("19_wind")
 
-[node name="Forest3" parent="Forest" unique_id=87989318 instance=ExtResource("6_7mycd")]
+[node name="Forest3" parent="ForestGroup" unique_id=87989318 instance=ExtResource("6_7mycd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.71781, 0, 0)
 script = ExtResource("19_wind")
 
-[node name="Forest4" parent="Forest" unique_id=1587378634 instance=ExtResource("6_7mycd")]
+[node name="Forest4" parent="ForestGroup" unique_id=1587378634 instance=ExtResource("6_7mycd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.71781, 4.249487, 0)
 script = ExtResource("19_wind")
 
-[node name="Forest5" parent="Forest" unique_id=1205128901 instance=ExtResource("6_7mycd")]
+[node name="Forest5" parent="ForestGroup" unique_id=1205128901 instance=ExtResource("6_7mycd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.208, 6, 0.1)
 script = ExtResource("19_wind")
 
-[node name="Forest2" parent="Forest" unique_id=1755887188 instance=ExtResource("6_7mycd")]
+[node name="Forest2" parent="ForestGroup" unique_id=1755887188 instance=ExtResource("6_7mycd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0903931, 30.231525, 0)
 script = ExtResource("19_wind")
 
-[node name="Forest6" parent="Forest" unique_id=1968128253 instance=ExtResource("6_7mycd")]
+[node name="Forest6" parent="ForestGroup" unique_id=1968128253 instance=ExtResource("6_7mycd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5560875, 25.651915, 0)
 script = ExtResource("19_wind")
 
-[node name="Forest7" parent="Forest" unique_id=1560723156 instance=ExtResource("6_7mycd")]
+[node name="Forest7" parent="ForestGroup" unique_id=1560723156 instance=ExtResource("6_7mycd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.900673, 27.633995, 0)
 script = ExtResource("19_wind")
 
-[node name="Rock_1" parent="Forest" unique_id=1201458398 instance=ExtResource("7_efxa6")]
+[node name="Rock_1" parent="ForestGroup" unique_id=1201458398 instance=ExtResource("7_efxa6")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.225887, 17.260778, 0.23194122)
 
-[node name="Rock_3" parent="Forest" unique_id=760445676 instance=ExtResource("8_dg77c")]
+[node name="Rock_3" parent="ForestGroup" unique_id=760445676 instance=ExtResource("8_dg77c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.175848, 9.476192, 0.16428399)
 
-[node name="Tree_2Snow" parent="Forest" unique_id=544422082 instance=ExtResource("9_ycdy4")]
+[node name="Tree_2Snow" parent="ForestGroup" unique_id=544422082 instance=ExtResource("9_ycdy4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.52336, 17.386389, -0.84556293)
 script = ExtResource("19_wind")
 
-[node name="Tree_3Snow" parent="Forest" unique_id=321758495 instance=ExtResource("10_w48qg")]
+[node name="Tree_3Snow" parent="ForestGroup" unique_id=321758495 instance=ExtResource("10_w48qg")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.967632, 51.53922, -0.2938168)
 script = ExtResource("19_wind")
 
-[node name="TreeWinter" parent="Forest" unique_id=416109398 instance=ExtResource("11_vivmo")]
+[node name="TreeWinter" parent="ForestGroup" unique_id=416109398 instance=ExtResource("11_vivmo")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.633923, 39.240993, -0.9214668)
 script = ExtResource("19_wind")
 
