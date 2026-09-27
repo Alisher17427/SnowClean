@@ -28,8 +28,8 @@ var torch_ground_pos: Vector3 = Vector3.ZERO
 
 var fireplace_fuel: float = 0.0   # секунд горения осталось (0..FIRE_MAX_FUEL)
 var fireplace_lit: bool = false
-const FIRE_WOOD_SECONDS = 60.0    # сколько секунд добавляет одно бревно
-const FIRE_MAX_FUEL = 240.0
+const FIRE_WOOD_SECONDS = 120.0   # сколько секунд добавляет одно бревно
+const FIRE_MAX_FUEL = 120.0       # максимум - одно бревно про запас, больше не влезет
 
 # срубленное дерево остаётся на месте, просто временно не рубится; tree_cooldowns
 # хранит оставшееся время до восстановления для каждого дерева. Само окошко с
@@ -507,6 +507,16 @@ var wind_player: AudioStreamPlayer
 const WIND_OUTSIDE_DB = -20.0   # громкость ветра на улице в обычную погоду
 const WIND_INDOOR_DB = -34.0    # в доме ветер приглушён
 const WIND_FADE_SPEED = 12.0    # дБ/сек, скорость перехода
+
+# физический ветер - одно направление на всю карту (то же, что сносит игрока
+# в метель, см. BLIZZARD_WIND_DIR в new_script.gd), но дует всегда, не только
+# в бурю: лёгкий бриз в обычную погоду, усиливается вместе с blizzard_intensity.
+# Используется для сноса пара изо рта и пламени факела (см. new_script.gd, torch.gd)
+const WIND_DIR = Vector3(0.6, 0.0, 0.8)   # ненормализован, длина ~1.0 - как есть
+const WIND_BASE_STRENGTH = 0.6            # доля силы ветра в ясную погоду (0..1)
+
+func wind_vector() -> Vector3:
+	return WIND_DIR * (WIND_BASE_STRENGTH + blizzard_intensity * (1.0 - WIND_BASE_STRENGTH))
 
 # метель - периодическое событие погоды: решает и запускает таймер только хост,
 # сама вспышка (её начало/конец) рассылается всем через RPC, а дальше каждый

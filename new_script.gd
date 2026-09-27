@@ -82,6 +82,7 @@ const TORCH_SWAY_AMP_ROT = 5.0    # покачивается (BOB_*) - тут н
 const TORCH_FLAME_LIFT = 0.4      # базовая тяга пламени вверх (как у build_pixel_flame)
 const TORCH_TRAIL_WIND = 1.6      # чем больше, тем сильнее уже вылетевшие частицы относит
 								   # назад относительно направления ходьбы
+const TORCH_WIND_SCALE = 3.5      # насколько сильно настоящий ветер (snow_sync.wind_vector) сносит пламя
 
 # где сейчас можно подобрать факел - null, если его нельзя взять (уже у кого-то
 # в руках). Раньше проверялась только стена, теперь факел может физически лежать
@@ -183,7 +184,10 @@ func _update_torch_walk_fx(delta):
 		return
 	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
 	if held_torch_flame and held_torch_flame.process_material:
-		held_torch_flame.process_material.gravity = Vector3(0, TORCH_FLAME_LIFT, 0) - horiz_vel * TORCH_TRAIL_WIND
+		var wind = Vector3.ZERO
+		if snow_sync and not _is_indoors(global_position):
+			wind = snow_sync.wind_vector() * TORCH_WIND_SCALE
+		held_torch_flame.process_material.gravity = Vector3(0, TORCH_FLAME_LIFT, 0) - horiz_vel * TORCH_TRAIL_WIND + wind
 
 	var speed = horiz_vel.length()
 	var w = clamp(speed / SPEED, 0.0, 1.0)
@@ -329,6 +333,7 @@ const BREATH_EXHALE_END = 0.85      # где выдох заканчиваетс
 const BREATH_LIFT = 0.1             # базовая тяга пара вверх (см. _build_breath_fog)
 const BREATH_TRAIL_WIND = 1.0       # пар тоже сдувает при ходьбе - легче факела, поэтому
 									 # слабее TORCH_TRAIL_WIND, но идея та же (_update_torch_walk_fx)
+const BREATH_WIND_SCALE = 2.5       # насколько сильно настоящий ветер (snow_sync.wind_vector) сносит пар
 
 # Имя узла игрока = id участника сети. Им управляет только его владелец.
 func _enter_tree():
@@ -554,7 +559,10 @@ func _update_breath_fog(delta: float):
 	# просто двигались вместе с игроком и импульс было бы не видно
 	if breath_particles.process_material:
 		var horiz_vel = Vector3(velocity.x, 0, velocity.z)
-		breath_particles.process_material.gravity = Vector3(0, BREATH_LIFT, 0) - horiz_vel * BREATH_TRAIL_WIND
+		var wind = Vector3.ZERO
+		if snow_sync and not _is_indoors(global_position):
+			wind = snow_sync.wind_vector() * BREATH_WIND_SCALE
+		breath_particles.process_material.gravity = Vector3(0, BREATH_LIFT, 0) - horiz_vel * BREATH_TRAIL_WIND + wind
 
 # звук вдоха/выдоха слышен, только если пар вообще заметен (visible_ratio > 0);
 # каждый включается один раз за цикл ровно там, где начинается его фаза,
@@ -881,9 +889,12 @@ func _update_survival(delta: float, snow_depth: float):
 
 	if not input_locked and Input.is_action_just_pressed("feed_fire") and held_log_id != "" and fireplace_node:
 		if global_position.distance_to(fireplace_node.global_position) <= WARM_RADIUS:
-			snow_sync.feed_log_to_fire.rpc(held_log_id)
-			held_log_id = ""
-			_unequip_log()
+			if snow_sync.fireplace_lit:
+				snow_sync._flash_toast("Камин уже полон")
+			else:
+				snow_sync.feed_log_to_fire.rpc(held_log_id)
+				held_log_id = ""
+				_unequip_log()
 
 	if not input_locked and Input.is_action_just_pressed("quest_interact"):
 		var dropzone = petya_node.get_node_or_null("DropZone") if petya_node else null

@@ -308,3 +308,4 @@ func _process(delta):
 	var flicker_mult = 1.0 + n * 0.2
 	glow.light_energy = BASE_ENERGY * flicker_mult
 	glow.omni_range = BASE_RANGE * (0.97 + 0.03 * flicker_mult)
+	# ветер на настенный факел не действует - он всегда висит внутри дома
