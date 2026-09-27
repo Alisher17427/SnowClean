@@ -86,4 +86,4 @@ repair_tower={
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
+rendering_device/driver.windows="vulkan"

@@ -48,8 +48,8 @@ size = Vector3(256, 0.2, 256)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_rub7e"]
 size = Vector2(256, 256)
-subdivide_width = 960
-subdivide_depth = 960
+subdivide_width = 256
+subdivide_depth = 256
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_7mycd"]
 viewport_path = NodePath("SnowMaskViewport")

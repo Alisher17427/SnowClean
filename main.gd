@@ -110,6 +110,12 @@ func _build_camera_and_menu():
 	achievements_btn.pressed.connect(snow_sync.open_achievements_screen)
 	mode_box.add_child(achievements_btn)
 
+	renderer_btn = Button.new()
+	renderer_btn.text = "Рендерер: " + RENDERER_NAMES.get(_current_renderer(), "?")
+	renderer_btn.pressed.connect(_toggle_renderer_popup)
+	mode_box.add_child(renderer_btn)
+	_build_renderer_popup()
+
 	multiplayer_box = VBoxContainer.new()
 	multiplayer_box.add_theme_constant_override("separation", 10)
 	multiplayer_box.visible = false
@@ -143,6 +149,60 @@ func _build_camera_and_menu():
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(status_label)
+
+# --- выбор рендерера: Godot выбирает видеодрайвер один раз при старте процесса
+# и не может сменить его на лету, поэтому "переключение" - это перезапуск того же
+# .exe с другим параметром командной строки (--rendering-driver / --rendering-method) ---
+const RENDERER_NAMES = {"vulkan": "Vulkan", "d3d12": "DirectX 12", "compatibility": "Compatibility"}
+const RENDERER_CFG_PATH = "user://renderer_choice.cfg"
+var renderer_btn: Button
+var renderer_popup: PopupPanel
+
+# Godot "съедает" --rendering-driver/--rendering-method до того, как скрипт
+# успевает их увидеть через OS.get_cmdline_args() - поэтому свой выбор просто
+# запоминаем сами в файле, а не пытаемся угадать его из параметров запуска
+func _current_renderer() -> String:
+	var cfg = ConfigFile.new()
+	if cfg.load(RENDERER_CFG_PATH) == OK:
+		return cfg.get_value("renderer", "choice", "vulkan")
+	return "vulkan"   # значение по умолчанию из project.godot, пока не выбрано иное
+
+func _save_renderer_choice(choice: String):
+	var cfg = ConfigFile.new()
+	cfg.set_value("renderer", "choice", choice)
+	cfg.save(RENDERER_CFG_PATH)
+
+func _build_renderer_popup():
+	renderer_popup = PopupPanel.new()
+	add_child(renderer_popup)
+	var box = VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	renderer_popup.add_child(box)
+	for key in ["vulkan", "d3d12", "compatibility"]:
+		var b = Button.new()
+		b.text = RENDERER_NAMES[key]
+		b.pressed.connect(_select_renderer.bind(key))
+		box.add_child(b)
+	var hint = Label.new()
+	hint.text = "При смене игра перезапустится"
+	hint.add_theme_font_size_override("font_size", 12)
+	box.add_child(hint)
+
+func _toggle_renderer_popup():
+	renderer_popup.popup_centered()
+
+func _select_renderer(choice: String):
+	renderer_popup.hide()
+	if choice == _current_renderer():
+		return   # уже активен, перезапуск не нужен
+	_save_renderer_choice(choice)
+	var args = []
+	if choice == "compatibility":
+		args = ["--rendering-method", "gl_compatibility", "--rendering-driver", "opengl3"]
+	else:
+		args = ["--rendering-driver", choice]
+	OS.create_process(OS.get_executable_path(), args)
+	get_tree().quit()
 
 func _show_multiplayer_options():
 	mode_box.visible = false
