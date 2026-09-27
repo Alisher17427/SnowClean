@@ -270,6 +270,7 @@ func _on_join_pressed():
 func _start_game():
 	menu_layer.hide()
 	$UI.visible = true
+	snow_sync.start_music()
 
 func _spawn_player(id: int):
 	var p = load(PLAYER_SCENE).instantiate()

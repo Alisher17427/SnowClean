@@ -508,6 +508,21 @@ const WIND_OUTSIDE_DB = -20.0   # громкость ветра на улице 
 const WIND_INDOOR_DB = -34.0    # в доме ветер приглушён
 const WIND_FADE_SPEED = 12.0    # дБ/сек, скорость перехода
 
+# фоновая музыка - крутит один общий плейлист локально у каждого игрока (не по
+# сети, звук у всех идентичен, синхронизировать нечего). Во время бури плавно
+# гаснет до тишины (buря и так шумная - вой ветра), после бури так же плавно
+# возвращается. Играет и в доме, и на улице - в отличие от wind_player, музыка
+# не про погоду снаружи, а про фон всей игры
+var music_player: AudioStreamPlayer
+var music_tracks: Array = []
+var current_track_name: String = ""
+var music_volume: float = 1.0   # отдельный множитель громкости музыки (0..1) - см. меню паузы
+const MUSIC_VOLUME_DB = -24.0   # -10 дБ от прежних -14 - по ощущению это примерно вдвое тише
+const MUSIC_FADE_SPEED = 4.0    # дБ/сек - гаснет медленнее ветра, музыка не должна дёргаться
+
+func set_music_volume(v: float):
+	music_volume = clamp(v, 0.0, 1.0)
+
 # физический ветер - одно направление на всю карту (то же, что сносит игрока
 # в метель, см. BLIZZARD_WIND_DIR в new_script.gd), но дует всегда, не только
 # в бурю: лёгкий бриз в обычную погоду, усиливается вместе с blizzard_intensity.
@@ -597,6 +612,7 @@ func _ready():
 	wind_player.volume_db = WIND_OUTSIDE_DB
 	wind_player.autoplay = true
 	add_child(wind_player)
+	_build_music()
 	_register_towers()
 	_load_achievements()
 	_build_achievement_toast()
@@ -615,7 +631,57 @@ func update_wind_indoor(indoor: bool, delta: float):
 	var target = (WIND_INDOOR_DB if indoor else WIND_OUTSIDE_DB) + blizzard_intensity * BLIZZARD_WIND_BOOST_DB
 	wind_player.volume_db = move_toward(wind_player.volume_db, target, WIND_FADE_SPEED * delta)
 
+func _build_music():
+	var files = {"res://music/dream1.wav": "Dream 1", "res://music/dream2.wav": "Dream 2", "res://music/dream3.wav": "Dream 3"}
+	for path in files:
+		music_tracks.append({"stream": load(path), "name": files[path]})
+	music_tracks.shuffle()
+	music_player = AudioStreamPlayer.new()
+	music_player.bus = "Master"
+	music_player.volume_db = MUSIC_VOLUME_DB
+	music_player.finished.connect(_play_next_track)
+	add_child(music_player)
+
+# вызывает main.gd из _start_game() - т.е. ровно когда игрок реально начал
+# играть (один, хост или подключившись), а не пока висит в главном меню.
+# Начинаем почти с тишины - _update_music() сам плавно доведёт громкость до
+# MUSIC_VOLUME_DB (та же техника, что и переход в/из бури), а не врубает сразу
+func start_music():
+	if music_player and not music_player.playing:
+		music_player.volume_db = -60.0
+		_play_next_track()
+
+# следующий трек по кругу - когда доходим до конца списка, перетасовываем заново,
+# чтобы не звучать одним и тем же порядком каждый раз, но и не повторить один
+# трек два раза подряд слишком часто
+func _play_next_track():
+	if music_tracks.is_empty():
+		return
+	var track = music_tracks.pop_front()
+	music_tracks.append(track)
+	music_player.stream = track["stream"]
+	music_player.play()
+	current_track_name = track["name"]
+
+# принудительно перескочить на следующий трек - вызывает меню паузы (кнопка "Плеер")
+func skip_track():
+	if music_player:
+		_play_next_track()
+
+func _update_music(delta: float):
+	if not music_player:
+		return
+	if music_volume <= 0.001:
+		music_player.volume_db = -80.0
+		return
+	# во время бури музыка полностью гаснет - вместо неё слышен только вой ветра;
+	# после бури так же плавно возвращается (move_toward той же техникой, что и ветер).
+	# music_volume - отдельный ползунок громкости музыки поверх этого (0 дБ при 100%)
+	var target = MUSIC_VOLUME_DB + linear_to_db(music_volume) - blizzard_intensity * 60.0
+	music_player.volume_db = move_toward(music_player.volume_db, target, MUSIC_FADE_SPEED * delta)
+
 func _process(delta):
+	_update_music(delta)
 	if fireplace_lit:
 		# чем больше игроков в игре, тем быстрее прогорают дрова - одно бревно на
 		# компанию из четверых расходуется в четыре раза быстрее, чем на одного

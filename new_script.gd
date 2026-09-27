@@ -1,6 +1,7 @@
 extends CharacterBody3D
 
 const SPEED = 3.5
+const SPRINT_MULT = 1.6   # во сколько раз быстрее при зажатом Shift
 const JUMP_VELOCITY = 4.5
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -274,9 +275,9 @@ const HP_MAX = 100.0
 const WARMTH_MAX = 100.0
 const WARM_RADIUS = 2.6          # на каком расстоянии от камина греет
 const WARM_RATE = 22.0           # скорость нагрева у огня, ед/сек
-const INDOOR_DECAY = 1.2         # тепло в доме без огня, ед/сек
-const OUTDOOR_DECAY = 2.6        # тепло на улице, ед/сек
-const SNOW_EXTRA_DECAY = 5.0     # дополнительная потеря тепла в глубоком снегу, ед/сек
+const INDOOR_DECAY = 0.7         # тепло в доме без огня, ед/сек
+const OUTDOOR_DECAY = 1.6        # тепло на улице, ед/сек
+const SNOW_EXTRA_DECAY = 3.0     # дополнительная потеря тепла в глубоком снегу, ед/сек
 const CHICKEN_COLD_PENALTY = 0.9 # доп. потеря тепла в доме за каждую курицу внутри (без огня рядом), ед/сек
 const CHICKEN_FIRE_PENALTY = 5.0 # на столько меньше греет камин за каждую курицу в доме (может уйти в минус - тогда камин уже не спасает)
 const HP_DECAY_COLD = 6.0        # потеря HP, когда тепло кончилось, ед/сек
@@ -975,6 +976,8 @@ func _physics_process(delta):
 	var speed = SPEED
 	if snow_sync and is_on_floor():
 		speed = SPEED * lerp(1.0, SNOW_SLOW_MIN, snow_sync.snow_depth_at(global_position))
+	if not input_locked and Input.is_action_pressed("sprint"):
+		speed *= SPRINT_MULT
 	if direction:
 		velocity.x = direction.x * speed
 		velocity.z = direction.z * speed

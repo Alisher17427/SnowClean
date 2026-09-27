@@ -18,6 +18,8 @@ var buttons = []              # {node, mat, half: Vector2, action: String, page:
 var all_panels = []            # {node, page} - вообще все панели, чтобы скрывать/показывать по страницам
 var hovered = -1
 var volume_label: Label3D
+var music_label: Label3D
+var music_volume_label: Label3D
 var current_page: int = 0     # 0 = главная страница паузы, 1 = настройки графики, 2 = кастомизация
 var customization_labels: Array = []   # Label3D по одному на каждый HAND_COLORS - для _refresh_customization
 
@@ -73,6 +75,11 @@ func _ready():
 	_load_gfx_settings()
 
 	# страница 0 - главное меню паузы
+	_add_panel("–", Vector2(-0.4, 0.95), Vector2(0.2, PANEL_H), "music_vol_down", 0.16, 0)
+	music_volume_label = _add_panel("", Vector2(0, 0.95), Vector2(0.56, PANEL_H), "", 0.09, 0)
+	_add_panel("+", Vector2(0.4, 0.95), Vector2(0.2, PANEL_H), "music_vol_up", 0.16, 0)
+	music_label = _add_panel("", Vector2(-0.1, 0.68), Vector2(0.76, PANEL_H), "", 0.08, 0)
+	_add_panel(">>", Vector2(0.42, 0.68), Vector2(0.16, PANEL_H), "music_skip", 0.13, 0)
 	_add_panel("ПАУЗА", Vector2(0, 0.42), Vector2(1.0, 0.16), "", 0.11, 0)
 	_add_panel("Продолжить", Vector2(0, 0.17), Vector2(1.0, PANEL_H), "resume", 0.09, 0)
 	_add_panel("–", Vector2(-0.4, -0.1), Vector2(0.2, PANEL_H), "vol_down", 0.16, 0)
@@ -84,6 +91,7 @@ func _ready():
 	_add_panel("В главное меню", Vector2(0, -1.18), Vector2(1.0, PANEL_H), "to_menu", 0.09, 0)
 	_add_panel("Выйти из игры", Vector2(0, -1.45), Vector2(1.0, PANEL_H), "quit", 0.09, 0)
 	_update_volume_text()
+	_update_music_volume_text()
 	player.snow_sync.achievements_closed.connect(_on_achievements_closed)
 
 	# страница 1 - настройки графики (те же строки "минус / значение / плюс", что и громкость)
@@ -312,6 +320,8 @@ func _on_achievements_closed():
 func _process(delta):
 	if not is_open or not is_instance_valid(player) or not is_inside_tree():
 		return
+	if music_label and player.snow_sync:
+		music_label.text = "Играет: " + player.snow_sync.current_track_name
 	var cam: Camera3D = player.camera
 	# меню следует за взглядом, как только тот выходит за пределы маленькой мёртвой
 	# зоны (см. комментарий у LEASH_YAW/LEASH_PITCH выше)
@@ -385,6 +395,14 @@ func _do_action(action: String):
 		"vol_up":
 			volume = clamp(volume + 0.1, 0.0, 1.0)
 			_apply_volume()
+		"music_skip":
+			player.snow_sync.skip_track()
+		"music_vol_down":
+			player.snow_sync.set_music_volume(player.snow_sync.music_volume - 0.1)
+			_update_music_volume_text()
+		"music_vol_up":
+			player.snow_sync.set_music_volume(player.snow_sync.music_volume + 0.1)
+			_update_music_volume_text()
 		"to_menu":
 			_close()
 			multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
@@ -518,6 +536,9 @@ func _apply_volume():
 
 func _update_volume_text():
 	volume_label.text = "Громкость %d%%" % int(round(volume * 100.0))
+
+func _update_music_volume_text():
+	music_volume_label.text = "Громкость музыки %d%%" % int(round(player.snow_sync.music_volume * 100.0))
 
 # --- настройки графики: WorldEnvironment один на сцену, поэтому берём его прямо
 # у главной сцены; вьюпорт - тот, в котором рисуется сам игрок ---

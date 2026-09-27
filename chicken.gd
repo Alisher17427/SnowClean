@@ -18,14 +18,19 @@ const HOUSE_MIN = Vector3(-3.0, -1.0, -9.0)
 const HOUSE_MAX = Vector3(3.0, 6.0, -3.0)
 const HOUSE_DOOR = Vector3(0.0, 0.0, -3.5)   # проём в бревенчатой избе (см. 2026-09-25 - старое каменное здание снесено)
 
-enum State { APPROACH, WANDER, COOLDOWN, HELD, THROWN, SLEEP }
-var state: int = State.APPROACH
+enum State { APPROACH, WANDER, WANDER_OUTSIDE, COOLDOWN, HELD, THROWN, SLEEP }
+var state: int = State.WANDER_OUTSIDE
 var target := Vector3.ZERO
 var wander_t := 0.0
 var cooldown_t := 0.0
 var holder_id: int = -1          # чей id держит курицу в руках (только в состоянии HELD)
 var throw_velocity := Vector3.ZERO   # скорость полёта (только в состоянии THROWN)
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
+
+# тот же двор, что используется для случайной точки после броска (_random_outside_point) -
+# пока все вышки исправны, куры гуляют тут сами по себе, а не идут в дом
+const YARD_MIN = Vector3(-22.0, 0.0, 4.0)
+const YARD_MAX = Vector3(22.0, 0.0, 28.0)
 
 func _enter_tree():
 	# курицами всегда управляет хост - его версия и является "правдой"
@@ -34,7 +39,7 @@ func _enter_tree():
 func _ready():
 	add_to_group("chicken")
 	if multiplayer.is_server():
-		target = HOUSE_DOOR + Vector3(randf_range(-0.3, 0.3), 0.0, 0.0)
+		target = _random_outside_point()
 
 func _is_indoors(pos: Vector3) -> bool:
 	return pos.x > HOUSE_MIN.x and pos.x < HOUSE_MAX.x and pos.z > HOUSE_MIN.z and pos.z < HOUSE_MAX.z
@@ -42,12 +47,30 @@ func _is_indoors(pos: Vector3) -> bool:
 func _random_outside_point() -> Vector3:
 	return Vector3(randf_range(-22.0, 22.0), 0.0, randf_range(4.0, 28.0))
 
+# вышка сломана - куры чувствуют бурю и бегут в дом (см. tower_broken в snow_sync.gd)
+func _tower_danger() -> bool:
+	var sync = get_tree().current_scene.get_node_or_null("SnowSync")
+	if not sync:
+		return false
+	for broken in sync.tower_broken.values():
+		if broken:
+			return true
+	return false
+
 func _pick_wander_target():
 	wander_t = randf_range(2.5, 5.0)
 	target = Vector3(
 		clamp(global_position.x + randf_range(-WANDER_RADIUS, WANDER_RADIUS), HOUSE_MIN.x + 1.0, HOUSE_MAX.x - 1.0),
 		0.0,
 		clamp(global_position.z + randf_range(-WANDER_RADIUS, WANDER_RADIUS), HOUSE_MIN.z + 1.0, HOUSE_MAX.z - 1.0)
+	)
+
+func _pick_wander_target_outside():
+	wander_t = randf_range(2.5, 5.0)
+	target = Vector3(
+		clamp(global_position.x + randf_range(-WANDER_RADIUS, WANDER_RADIUS), YARD_MIN.x, YARD_MAX.x),
+		0.0,
+		clamp(global_position.z + randf_range(-WANDER_RADIUS, WANDER_RADIUS), YARD_MIN.z, YARD_MAX.z)
 	)
 
 func _move_toward_point(dest: Vector3, delta: float):
@@ -105,18 +128,26 @@ func _physics_process(delta):
 	# с рассветом там же, где стояли; день/ночь считает хост по своим часам (day_night.gd)
 	var day_night = get_tree().current_scene.get_node_or_null("DayNight")
 	var night = day_night != null and day_night.is_night
-	if night and state in [State.APPROACH, State.WANDER, State.COOLDOWN]:
+	if night and state in [State.APPROACH, State.WANDER, State.WANDER_OUTSIDE, State.COOLDOWN]:
 		state = State.SLEEP
 	elif not night and state == State.SLEEP:
-		state = State.WANDER if _is_indoors(global_position) else State.APPROACH
+		state = State.WANDER if _is_indoors(global_position) else State.WANDER_OUTSIDE
+	# вышка сломана - гуляющие по двору куры бросают всё и бегут прятаться в доме
+	if state == State.WANDER_OUTSIDE and _tower_danger():
+		state = State.APPROACH
+		target = HOUSE_DOOR + Vector3(randf_range(-0.3, 0.3), 0.0, 0.0)
 	match state:
 		State.SLEEP:
 			pass   # стоит на месте, ждёт рассвета
 		State.COOLDOWN:
 			cooldown_t -= delta
 			if cooldown_t <= 0.0:
-				state = State.APPROACH
-				target = HOUSE_DOOR + Vector3(randf_range(-0.3, 0.3), 0.0, 0.0)
+				if _tower_danger():
+					state = State.APPROACH
+					target = HOUSE_DOOR + Vector3(randf_range(-0.3, 0.3), 0.0, 0.0)
+				else:
+					state = State.WANDER_OUTSIDE
+					_pick_wander_target_outside()
 		State.APPROACH:
 			_move_toward_point(target, delta)
 			if global_position.distance_to(target) < 0.4:
@@ -127,6 +158,11 @@ func _physics_process(delta):
 			_move_toward_point(target, delta)
 			if wander_t <= 0.0 or global_position.distance_to(target) < 0.3:
 				_pick_wander_target()
+		State.WANDER_OUTSIDE:
+			wander_t -= delta
+			_move_toward_point(target, delta)
+			if wander_t <= 0.0 or global_position.distance_to(target) < 0.3:
+				_pick_wander_target_outside()
 		State.HELD:
 			var holder = get_tree().current_scene.get_node_or_null("Players/" + str(holder_id))
 			if holder and holder.has_method("get_chicken_hold_position"):
