@@ -27,10 +27,11 @@ func _ready():
 	snow_sync = get_tree().current_scene.get_node_or_null("SnowSync")
 
 func _process(_delta):
-	var t = Time.get_ticks_msec() / 1000.0
-	var blizzard = snow_sync.blizzard_intensity if snow_sync else 0.0
-	var amp = deg_to_rad(BASE_AMPLITUDE_DEG + BLIZZARD_AMPLITUDE_DEG * blizzard)
-	var sway_a = sin(t * SWAY_SPEED + phase) * amp
-	var sway_b = sin(t * SWAY_SPEED * 0.7 + phase * 1.7) * amp * 0.6
-	var sway_basis = Basis(Vector3(1, 0, 0), sway_a) * Basis(Vector3(0, 0, 1), sway_b)
-	transform = base_transform * Transform3D(sway_basis, Vector3.ZERO)
+	pass
+	#var t = Time.get_ticks_msec() / 1000.0
+	#var blizzard = snow_sync.blizzard_intensity if snow_sync else 0.0
+	#var amp = deg_to_rad(BASE_AMPLITUDE_DEG + BLIZZARD_AMPLITUDE_DEG * blizzard)
+	#var sway_a = sin(t * SWAY_SPEED + phase) * amp
+	#var sway_b = sin(t * SWAY_SPEED * 0.7 + phase * 1.7) * amp * 0.6
+	#var sway_basis = Basis(Vector3(1, 0, 0), sway_a) * Basis(Vector3(0, 0, 1), sway_b)
+	#transform = base_transform * Transform3D(sway_basis, Vector3.ZERO)

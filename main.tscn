@@ -252,7 +252,7 @@ transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 26, 0, 18)
 script = ExtResource("19_wind")
 
 [node name="FarDecor2" parent="." unique_id=660878519 instance=ExtResource("9_ycdy4")]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -24, 0, 22)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -20.328365, 2.076394, 19.348856)
 script = ExtResource("19_wind")
 
 [node name="FarDecor3" parent="." unique_id=1963466703 instance=ExtResource("11_vivmo")]
@@ -260,11 +260,11 @@ transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 20, 0, -26)
 script = ExtResource("19_wind")
 
 [node name="FarDecor4" parent="." unique_id=366423731 instance=ExtResource("10_w48qg")]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -22, 0, -20)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -22, 3.1681728, -20)
 script = ExtResource("19_wind")
 
 [node name="FarDecor5" parent="." unique_id=2028534874 instance=ExtResource("7_efxa6")]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 28, 0, -4)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 20.217999, 3.2231865, -4)
 
 [node name="FarDecor6" parent="." unique_id=1603724359 instance=ExtResource("8_dg77c")]
 transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -28, 0, 6)
@@ -274,7 +274,7 @@ transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 10, 0, 28)
 script = ExtResource("19_wind")
 
 [node name="FarDecor8" parent="." unique_id=960924307 instance=ExtResource("9_ycdy4")]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -10, 0, -28)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -10, 2.5173173, -28)
 script = ExtResource("19_wind")
 
 [node name="House" type="Node3D" parent="." unique_id=300100001]
