@@ -84,6 +84,14 @@ const TORCH_FLAME_LIFT = 0.4      # базовая тяга пламени вв�
 const TORCH_TRAIL_WIND = 1.6      # чем больше, тем сильнее уже вылетевшие частицы относит
 								   # назад относительно направления ходьбы
 const TORCH_WIND_SCALE = 3.5      # насколько сильно настоящий ветер (snow_sync.wind_vector) сносит пламя
+# отдельное отставание факела от взгляда при повороте мышью - факел ребёнок
+# camera (не arms), поэтому общий arm_lag на него не действует вообще; тот же
+# приём, что и у топора (AXE_LOOK_LAG/AXE_LAG_MAX/AXE_LAG_RECOVER)
+var torch_lag_pitch = 0.0
+var torch_lag_yaw = 0.0
+const TORCH_LOOK_LAG = 0.35
+const TORCH_LAG_MAX = 0.3
+const TORCH_LAG_RECOVER = 8.0
 
 # где сейчас можно подобрать факел - null, если его нельзя взять (уже у кого-то
 # в руках). Раньше проверялась только стена, теперь факел может физически лежать
@@ -182,6 +190,8 @@ func _unequip_torch():
 # независимую синусоиду, иначе факел и рука дёргались бы каждый в своём такте
 func _update_torch_walk_fx(delta):
 	if not held_torch_rig:
+		torch_lag_pitch = 0.0
+		torch_lag_yaw = 0.0
 		return
 	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
 	if held_torch_flame and held_torch_flame.process_material:
@@ -190,18 +200,31 @@ func _update_torch_walk_fx(delta):
 			wind = snow_sync.wind_vector() * TORCH_WIND_SCALE
 		held_torch_flame.process_material.gravity = Vector3(0, TORCH_FLAME_LIFT, 0) - horiz_vel * TORCH_TRAIL_WIND + wind
 
+	# своё отставание от взгляда мышью (torch_lag_*, см. _input) - факел ребёнок
+	# camera, а не arms, поэтому общий arm_lag его не касается. Поворот применяем
+	# СНАРУЖИ базовой позы (в пространстве camera, вокруг её начала координат),
+	# а не крутим сам рычаг factора вокруг его собственного pivot: факел - тонкий
+	# вертикальный стержень, и поворот вокруг СВОЕЙ длинной (вертикальной) оси
+	# почти не виден - а yaw от поворота мышью в основном именно такое вращение
+	# и даёт. Вращая позицию рычага вокруг камеры, получаем заметную дугу, как
+	# у рук/топора/бревна (они смещены от начала координат camera/arms)
+	var lag_t = clamp(delta * TORCH_LAG_RECOVER, 0.0, 1.0)
+	torch_lag_pitch = lerp(torch_lag_pitch, 0.0, lag_t)
+	torch_lag_yaw = lerp(torch_lag_yaw, 0.0, lag_t)
+	var lag_xform = Transform3D(Basis.from_euler(Vector3(torch_lag_pitch, torch_lag_yaw, 0)), Vector3.ZERO)
+
 	var speed = horiz_vel.length()
 	var w = clamp(speed / SPEED, 0.0, 1.0)
 	var moving = is_on_floor() and w > 0.05
 	if not moving:
-		held_torch_rig.transform = held_torch_base_xform
+		held_torch_rig.transform = lag_xform * held_torch_base_xform
 		torch_step_sign = 0.0
 		return
 
 	# dip_r уже само по себе умножено на w (см. _update_arms) - второй раз не масштабируем
 	var sway_pos = Vector3(sin(bob_time * 0.5) * TORCH_SWAY_AMP_X * w, -dip_r * TORCH_SWAY_AMP_Y, 0)
 	var sway_rot = deg_to_rad(sin(bob_time) * TORCH_SWAY_AMP_ROT * w)
-	held_torch_rig.transform = held_torch_base_xform * Transform3D(Basis(Vector3(0, 0, 1), sway_rot), sway_pos)
+	held_torch_rig.transform = lag_xform * held_torch_base_xform * Transform3D(Basis(Vector3(0, 0, 1), sway_rot), sway_pos)
 
 	var s = sign(sin(bob_time))
 	if s != 0.0 and s != torch_step_sign:
@@ -223,11 +246,22 @@ func _update_torch_flicker(delta: float):
 # и кладётся в камин клавишей "положить дрова" (Q) рядом с ним ---
 var held_log_id: String = ""   # ключ бревна в snow_sync.logs, "" если руки без бревна
 var held_log_mesh: MeshInstance3D
+var held_log_base_xform: Transform3D
 const LOG_PICKUP_RADIUS = 1.6
 const LOG_DROP_FORWARD = 1.0
 const LOG_DROP_UP = 0.8       # бревно тоже роняем физикой (см. drop_log в snow_sync.gd),
 const LOG_DROP_IMPULSE = 1.0  # а не кладём мгновенно - с высоты руки и с лёгким толчком
 const HELD_LOG_POSITION = Vector3(0.05, -0.3, -0.55)
+# покачивание при ходьбе + своё отставание от взгляда мышью - тот же приём,
+# что и у топора (см. _update_axe_walk_fx/AXE_*), бревно тоже ребёнок arms
+const LOG_SWAY_AMP_X = 0.02
+const LOG_SWAY_AMP_Y = 0.045
+const LOG_SWAY_AMP_ROT = 4.0
+var log_lag_pitch = 0.0
+var log_lag_yaw = 0.0
+const LOG_LOOK_LAG = 0.35
+const LOG_LAG_MAX = 0.3
+const LOG_LAG_RECOVER = 8.0
 
 # --- топор у дома: лежит на земле, поднимается клавишей F рядом с ним;
 # уже в руках - той же клавишей F выбрасывается обратно на землю перед игроком ---
@@ -235,13 +269,31 @@ var axe_node: Node3D          # декоративный топор из main.ts
 							   # при поднятии/броске его просто прячут/показывают и двигают по сети)
 var has_axe: bool = false     # личный признак, по сети не передаётся (как и дрова)
 var held_axe: MeshInstance3D  # маленькая копия перед руками, пока топор поднят
+var held_axe_base_xform: Transform3D   # исходная поза топора без покачивания - на неё накручивается sway
 const AXE_PICKUP_RADIUS = 1.6
 const AXE_DROP_FORWARD = 1.0  # на сколько метров вперёд бросаем топор при выбрасывании
 const AXE_DROP_UP = 0.8       # топор роняем физикой (см. drop_axe в snow_sync.gd) с высоты
 const AXE_DROP_IMPULSE = 1.2  # руки, а не кладём мгновенно на землю - с лёгким толчком
 const HELD_AXE_MESH = preload("res://models/axe/12351_Axe_v3_l3.obj")
 const HELD_AXE_SCALE = 0.05
-const HELD_AXE_POSITION = Vector3(0.0, -0.16, -0.55)   # по центру, перед руками (см. _build_arms)
+const HELD_AXE_POSITION = Vector3(0.0, -0.2, -0.85)   # по центру, перед руками (см. _build_arms) - подальше от лица
+# покачивание топора в руке при ходьбе - без этого он висит намертво перед
+# камерой, хотя сама камера уже покачивается (BOB_*): топор - ребёнок камеры
+# (см. arms в _build_arms), двигается с ней 1:1, и это движение компенсирует
+# само себя на экране, поэтому нужно независимое покачивание поверх базовой
+# позы (см. _update_axe_walk_fx), тот же приём, что и у факела (TORCH_SWAY_*)
+const AXE_SWAY_AMP_X = 0.02
+const AXE_SWAY_AMP_Y = 0.045
+const AXE_SWAY_AMP_ROT = 4.0
+# отдельное, более выраженное отставание топора от взгляда при повороте мышью -
+# топор уже получает общее покачивание рук (ARM_LOOK_LAG, arms.rotation), т.к.
+# он ребёнок arms; тут добавляется СВОЙ, более сильный и медленный лаг поверх
+# этого, только для топора - руки и факел (тоже дети arms) не трогаем
+var axe_lag_pitch = 0.0
+var axe_lag_yaw = 0.0
+const AXE_LOOK_LAG = 0.35      # доля скачка камеры, на которую топор не успевает - чуть больше ARM_LOOK_LAG
+const AXE_LAG_MAX = 0.3        # предел отставания, радианы - чуть больше ARM_LAG_MAX
+const AXE_LAG_RECOVER = 8.0    # скорость возврата к взгляду - близко к ARM_LAG_RECOVER
 # исходная модель топора лежит плашмя, её "длинная ось" в локальных
 # координатах направлена вот так - используем, чтобы поставить топор вертикально в руке
 const AXE_MODEL_AXIS = Vector3(-0.8648, 0.0, 0.5022)
@@ -258,6 +310,15 @@ const CHICKEN_HOLD_DOWN = 0.35
 const CHICKEN_THROW_CHARGE_TIME = 1.2     # секунд зажатия ПКМ до максимальной силы
 const CHICKEN_THROW_MIN_FORCE = 4.0
 const CHICKEN_THROW_MAX_FORCE = 13.0
+# курица держится не узлом-ребёнком, а голой позицией (get_chicken_hold_position,
+# её каждый кадр читает chicken.gd) - поэтому вместо поворота transform.basis, как
+# у топора/факела/бревна, тут лагом поворачивается сам "вперёд", по которому
+# считается точка удержания - тот же эффект отставания от взгляда мышью
+var chicken_lag_pitch = 0.0
+var chicken_lag_yaw = 0.0
+const CHICKEN_LOOK_LAG = 0.35
+const CHICKEN_LAG_MAX = 0.3
+const CHICKEN_LAG_RECOVER = 8.0
 
 # --- снежки: ЛКМ на снежной земле со свободными руками лепит снежок, ЛКМ ещё раз -
 # кидает его вперёд. Сам снежок в полёте - лёгкий локальный визуальный эффект
@@ -742,16 +803,26 @@ func _is_indoors(pos: Vector3) -> bool:
 
 # где висит курица, пока игрок её держит в руках - сюда её каждый кадр ставит
 # хост (см. State.HELD в chicken.gd); используется по имени через has_method,
-# поэтому сигнатура не должна меняться без правки chicken.gd
+# поэтому сигнатура не должна меняться без правки chicken.gd.
+# Курица - не узел-ребёнок camera/arms, а голая мировая позиция, которую каждый
+# кадр читает chicken.gd, поэтому лаг тут крутит не transform, а сам "вперёд" -
+# тот же приём и те же формулы, что у топора/факела/бревна (chicken_lag_*, см. _input)
 func get_chicken_hold_position() -> Vector3:
-	return camera.global_position + (-camera.global_transform.basis.z) * CHICKEN_HOLD_FORWARD - Vector3(0, CHICKEN_HOLD_DOWN, 0)
+	var lag_basis = Basis.from_euler(Vector3(chicken_lag_pitch, chicken_lag_yaw, 0))
+	var forward = -(camera.global_transform.basis * lag_basis).z
+	return camera.global_position + forward * CHICKEN_HOLD_FORWARD - Vector3(0, CHICKEN_HOLD_DOWN, 0)
 
 # ПКМ зажата - копим силу броска; отпустили - кидаем курицу вперёд по дуге
 func _update_chicken_hold(delta: float):
 	if held_chicken_path == "":
 		chicken_throw_charge_t = 0.0
 		chicken_rmb_was_down = false
+		chicken_lag_pitch = 0.0
+		chicken_lag_yaw = 0.0
 		return
+	var lag_t = clamp(delta * CHICKEN_LAG_RECOVER, 0.0, 1.0)
+	chicken_lag_pitch = lerp(chicken_lag_pitch, 0.0, lag_t)
+	chicken_lag_yaw = lerp(chicken_lag_yaw, 0.0, lag_t)
 	var rmb_down = not input_locked and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 	if rmb_down:
 		chicken_throw_charge_t = min(chicken_throw_charge_t + delta, CHICKEN_THROW_CHARGE_TIME)
@@ -962,6 +1033,14 @@ func _input(event):
 		head.rotation.x = clamp(head.rotation.x, -1.5, 1.5)
 		arm_lag_yaw = clamp(arm_lag_yaw - dy * ARM_LOOK_LAG, -ARM_LAG_MAX, ARM_LAG_MAX)
 		arm_lag_pitch = clamp(arm_lag_pitch - dx * ARM_LOOK_LAG, -ARM_LAG_MAX, ARM_LAG_MAX)
+		axe_lag_yaw = clamp(axe_lag_yaw - dy * AXE_LOOK_LAG, -AXE_LAG_MAX, AXE_LAG_MAX)
+		axe_lag_pitch = clamp(axe_lag_pitch - dx * AXE_LOOK_LAG, -AXE_LAG_MAX, AXE_LAG_MAX)
+		torch_lag_yaw = clamp(torch_lag_yaw - dy * TORCH_LOOK_LAG, -TORCH_LAG_MAX, TORCH_LAG_MAX)
+		torch_lag_pitch = clamp(torch_lag_pitch - dx * TORCH_LOOK_LAG, -TORCH_LAG_MAX, TORCH_LAG_MAX)
+		log_lag_yaw = clamp(log_lag_yaw - dy * LOG_LOOK_LAG, -LOG_LAG_MAX, LOG_LAG_MAX)
+		log_lag_pitch = clamp(log_lag_pitch - dx * LOG_LOOK_LAG, -LOG_LAG_MAX, LOG_LAG_MAX)
+		chicken_lag_yaw = clamp(chicken_lag_yaw - dy * CHICKEN_LOOK_LAG, -CHICKEN_LAG_MAX, CHICKEN_LAG_MAX)
+		chicken_lag_pitch = clamp(chicken_lag_pitch - dx * CHICKEN_LOOK_LAG, -CHICKEN_LAG_MAX, CHICKEN_LAG_MAX)
 
 func _physics_process(delta):
 	if not is_multiplayer_authority():
@@ -994,6 +1073,8 @@ func _physics_process(delta):
 	move_and_slide()
 	_update_bob(delta)
 	_update_torch_walk_fx(delta)
+	_update_axe_walk_fx(delta)
+	_update_log_walk_fx(delta)
 	if is_multiplayer_authority():
 		var snow_depth = 0.0
 		if snow_sync and is_on_floor():
@@ -1110,8 +1191,38 @@ func _equip_axe():
 	if axis.length() > 0.001:
 		rot_basis = Basis(axis.normalized(), AXE_MODEL_AXIS.angle_to(target_up))
 	held_axe.transform = Transform3D(rot_basis.scaled(Vector3.ONE * HELD_AXE_SCALE), HELD_AXE_POSITION)
+	held_axe_base_xform = held_axe.transform
+	axe_lag_pitch = 0.0
+	axe_lag_yaw = 0.0
 	arms.add_child(held_axe)
 	_update_hud()
+
+# независимое от камеры покачивание поверх базовой позы - два слоя сразу:
+# 1) bob при ходьбе, та же идея и формулы, что и у факела (_update_torch_walk_fx),
+#    но без привязки к dip_l/dip_r: топор держится по центру (HELD_AXE_POSITION.x = 0),
+#    а не с уклоном в одну руку, поэтому качаем общей синусоидой от bob_time
+# 2) свой, более выраженный лаг от поворота мышью (axe_lag_pitch/yaw, см. _input) -
+#    поверх общего arms.rotation, который топор и так наследует как ребёнок arms
+func _update_axe_walk_fx(delta):
+	if not held_axe:
+		axe_lag_pitch = 0.0
+		axe_lag_yaw = 0.0
+		return
+	var lag_t = clamp(delta * AXE_LAG_RECOVER, 0.0, 1.0)
+	axe_lag_pitch = lerp(axe_lag_pitch, 0.0, lag_t)
+	axe_lag_yaw = lerp(axe_lag_yaw, 0.0, lag_t)
+	var lag_basis = Basis.from_euler(Vector3(axe_lag_pitch, axe_lag_yaw, 0))
+
+	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
+	var speed = horiz_vel.length()
+	var w = clamp(speed / SPEED, 0.0, 1.0)
+	var moving = is_on_floor() and w > 0.05
+	var sway_pos = Vector3.ZERO
+	var sway_rot = 0.0
+	if moving:
+		sway_pos = Vector3(sin(bob_time * 0.5) * AXE_SWAY_AMP_X * w, -abs(sin(bob_time)) * AXE_SWAY_AMP_Y * w, 0)
+		sway_rot = deg_to_rad(sin(bob_time) * AXE_SWAY_AMP_ROT * w)
+	held_axe.transform = held_axe_base_xform * Transform3D(lag_basis * Basis(Vector3(0, 0, 1), sway_rot), sway_pos)
 
 # выбросили топор - убираем копию из рук (сам топор на земле показывает/двигает snow_sync)
 func _unequip_axe():
@@ -1150,6 +1261,9 @@ func _equip_log():
 	held_log_mesh = snow_sync.make_log_mesh()
 	held_log_mesh.scale = Vector3.ONE * 0.6
 	held_log_mesh.position = HELD_LOG_POSITION
+	held_log_base_xform = held_log_mesh.transform
+	log_lag_pitch = 0.0
+	log_lag_yaw = 0.0
 	arms.add_child(held_log_mesh)
 	_update_hud()
 
@@ -1158,6 +1272,29 @@ func _unequip_log():
 		held_log_mesh.queue_free()
 		held_log_mesh = null
 	_update_hud()
+
+# покачивание при ходьбе + своё отставание от взгляда мышью - тот же приём,
+# что и у топора (_update_axe_walk_fx)
+func _update_log_walk_fx(delta):
+	if not held_log_mesh:
+		log_lag_pitch = 0.0
+		log_lag_yaw = 0.0
+		return
+	var lag_t = clamp(delta * LOG_LAG_RECOVER, 0.0, 1.0)
+	log_lag_pitch = lerp(log_lag_pitch, 0.0, lag_t)
+	log_lag_yaw = lerp(log_lag_yaw, 0.0, lag_t)
+	var lag_basis = Basis.from_euler(Vector3(log_lag_pitch, log_lag_yaw, 0))
+
+	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
+	var speed = horiz_vel.length()
+	var w = clamp(speed / SPEED, 0.0, 1.0)
+	var moving = is_on_floor() and w > 0.05
+	var sway_pos = Vector3.ZERO
+	var sway_rot = 0.0
+	if moving:
+		sway_pos = Vector3(sin(bob_time * 0.5) * LOG_SWAY_AMP_X * w, -abs(sin(bob_time)) * LOG_SWAY_AMP_Y * w, 0)
+		sway_rot = deg_to_rad(sin(bob_time) * LOG_SWAY_AMP_ROT * w)
+	held_log_mesh.transform = held_log_base_xform * Transform3D(lag_basis * Basis(Vector3(0, 0, 1), sway_rot), sway_pos)
 
 func _build_arms():
 	arms = Node3D.new()

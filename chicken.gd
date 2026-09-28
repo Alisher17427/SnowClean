@@ -11,6 +11,7 @@ const SPEED = 1.1
 const WANDER_RADIUS = 2.912
 const KICK_COOLDOWN = 10.0    # сколько секунд после броска курица не подходит к дому
 const THROW_GRAVITY = 9.8
+const CHICKEN_HOLD_FOLLOW_SPEED = 20.0   # скорость плавного догона руки, см. State.HELD ниже
 
 # та же прямоугольная область дома, что и в new_script.gd (HOUSE_MIN/HOUSE_MAX) -
 # держать значения одинаковыми при правке одного из файлов
@@ -166,7 +167,14 @@ func _physics_process(delta):
 		State.HELD:
 			var holder = get_tree().current_scene.get_node_or_null("Players/" + str(holder_id))
 			if holder and holder.has_method("get_chicken_hold_position"):
-				global_position = holder.get_chicken_hold_position()
+				# плавно догоняем цель, а не телепортируемся на неё каждый тик -
+				# цель сама покачивается (лаг от поворота мышью, см.
+				# get_chicken_hold_position в new_script.gd), а курица - отдельный
+				# узел со своим _physics_process, который может выполниться чуть
+				# не в такт с игроком (а у не-хоста ещё и добавляется сетевая
+				# задержка MultiplayerSynchronizer) - жёсткий снап на дрожащую
+				# цель это дёргало, lerp сглаживает
+				global_position = global_position.lerp(holder.get_chicken_hold_position(), clamp(delta * CHICKEN_HOLD_FOLLOW_SPEED, 0.0, 1.0))
 			else:
 				# хозяин отключился/пропал - отпускаем курицу и обязательно
 				# включаем коллизию обратно у всех (см. _land), иначе она
