@@ -18,22 +18,37 @@ extends Node3D
 const CLOUD_COUNT = 6
 const CLOUD_HEIGHT = 28.0
 const CLOUD_AREA = 45.0        # облака блуждают в квадрате -CLOUD_AREA..CLOUD_AREA, потом заходят с другого края
-const WIND_DIR = Vector2(0.6, 0.35)   # направление ветра (x, z), нормализуется ниже
-const WIND_SPEED = 0.6                # м/с
 const CLOUD_SEED = 918273645          # фиксированный - раскладка кластеров одинакова у всех
 const SYNC_INTERVAL = 5.0             # раз в столько секунд хост поправляет всех клиентов
 
+# направление и сила сноса теперь берутся из общего ветра (snow_sync.wind_vector) -
+# того же, что сносит пар изо рта, пламя факела и дым из трубы: лёгкий бриз в
+# ясную погоду, усиливается вместе с blizzard_intensity во время метели.
+# CLOUD_WIND_SPEED_SCALE подобран так, чтобы в штиль (|wind_vector| ~= WIND_BASE_STRENGTH
+# = 0.6) скорость сноса совпадала со старой константой WIND_SPEED = 0.6 м/с
+const CLOUD_WIND_SPEED_SCALE = 1.0
+const FALLBACK_WIND = Vector3(0.6, 0.0, 0.8)   # на случай если SnowSync ещё не готов в первом кадре
+
+var snow_sync: Node
 var clouds: Array = []          # узлы-кластеры (каждый - несколько сплюснутых сфер)
 var base_positions: Array = []  # Vector3 на каждое облако - точка при wind_elapsed = 0
-var wind_elapsed: float = 0.0
+var wind_elapsed: float = 0.0   # накопленное расстояние сноса, м (не время - см. _process)
 var _sync_timer: float = 0.0
 
 func _ready():
+	snow_sync = get_parent().get_node_or_null("SnowSync")
 	var rng = RandomNumberGenerator.new()
 	rng.seed = CLOUD_SEED
 	var mat = StandardMaterial3D.new()
 	mat.albedo_color = Color(1, 1, 1, 0.85)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	# ALPHA_DEPTH_PRE_PASS, а не обычный ALPHA-blend: в Godot 4 (Forward+/Vulkan)
+	# объекты с alpha-blend прозрачностью не попадают в shadow pass и никогда не
+	# отбрасывают тень, сколько бы cast_shadow ни было включено. Depth pre-pass
+	# честно пишет глубину (тень строится по ней), а сам цвет всё равно рисуется
+	# обычным альфа-блендом - в отличие от ALPHA_HASH тут нет дизер-шума, потому
+	# что альфа облаков постоянная (0.85 везде), а не переменная по текстуре -
+	# на такой ровной альфе hash даёт видимую шумную "рябь" вместо мягкого края
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
 	mat.roughness = 1.0
 	for i in range(CLOUD_COUNT):
 		var cloud = Node3D.new()
@@ -69,24 +84,28 @@ func _on_peer_connected(id: int):
 		sync_wind.rpc_id(id, wind_elapsed)
 
 func _process(delta):
-	wind_elapsed += delta
+	var wind = snow_sync.wind_vector() if snow_sync else FALLBACK_WIND
+	wind_elapsed += wind.length() * CLOUD_WIND_SPEED_SCALE * delta
 
 	# только хост периодически поправляет всех остальных - без этого рассинхрон
 	# постепенно накапливался бы даже при одинаковом старте (разная частота
-	# кадров/паузы на разных компьютерах)
+	# кадров/паузы на разных компьютерах, plus blizzard_intensity сглаживается
+	# локально у каждого клиента и может чуть разойтись между поправками)
 	if multiplayer.is_server():
 		_sync_timer += delta
 		if _sync_timer >= SYNC_INTERVAL:
 			_sync_timer = 0.0
 			sync_wind.rpc(wind_elapsed)
 
+	var dir = Vector2(wind.x, wind.z).normalized()
 	for i in range(clouds.size()):
-		clouds[i].position = _wrapped_pos(base_positions[i], wind_elapsed)
+		clouds[i].position = _wrapped_pos(base_positions[i], dir, wind_elapsed)
 
-# чистая функция от времени - не накопление дрейфа кадр за кадром, поэтому
-# позицию всегда можно посчитать заново без риска расхождения по сети
-func _wrapped_pos(base: Vector3, t: float) -> Vector3:
-	var drift = Vector3(WIND_DIR.x, 0.0, WIND_DIR.y).normalized() * WIND_SPEED * t
+# позиция = база + направление ветра * накопленное расстояние сноса (не мгновенная
+# скорость * dt кадр за кадром) - так же, как раньше было "чистой функцией от
+# времени", просто теперь накопление учитывает переменную во время метели скорость
+func _wrapped_pos(base: Vector3, dir: Vector2, dist: float) -> Vector3:
+	var drift = Vector3(dir.x, 0.0, dir.y) * dist
 	var p = base + drift
 	p.x = wrapf(p.x, -CLOUD_AREA, CLOUD_AREA)
 	p.z = wrapf(p.z, -CLOUD_AREA, CLOUD_AREA)

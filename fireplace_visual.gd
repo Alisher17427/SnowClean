@@ -27,8 +27,11 @@ const EMISSION_BASE = 1.4
 # что включает/выключает свет и треск) - густота плавно нарастает/спадает, а не
 # щёлкает разом, чтобы не выглядело так, будто дым появляется по команде ---
 var smoke: GPUParticles3D
+var smoke_material: ParticleProcessMaterial
 const SMOKE_MAX_RATIO = 0.55
 const SMOKE_FADE_SPEED = 0.35   # ед. amount_ratio в секунду
+const SMOKE_BASE_DRIFT = Vector3(0.05, 0.25, 0.03)   # подъём + лёгкий базовый снос без ветра
+const SMOKE_WIND_SCALE = 2.0    # насколько сильно настоящий ветер (snow_sync.wind_vector) сносит дым
 
 func _ready():
 	mat = StandardMaterial3D.new()
@@ -64,7 +67,7 @@ func _build_smoke():
 	pm.spread = 18.0
 	pm.initial_velocity_min = 0.5
 	pm.initial_velocity_max = 0.9
-	pm.gravity = Vector3(0.05, 0.25, 0.03)   # чуть сносит ветром и продолжает подниматься
+	pm.gravity = SMOKE_BASE_DRIFT   # подъём + снос - переигрывается каждый кадр в _process с учётом реального ветра
 	pm.damping_min = 0.05
 	pm.damping_max = 0.15
 	pm.scale_min = 0.6
@@ -87,6 +90,7 @@ func _build_smoke():
 	grad_tex.gradient = gradient
 	pm.color_ramp = grad_tex
 	smoke.process_material = pm
+	smoke_material = pm
 
 	var mesh = QuadMesh.new()
 	mesh.size = Vector2(0.5, 0.5)
@@ -130,3 +134,9 @@ func _process(delta):
 
 	var target_ratio = SMOKE_MAX_RATIO if lit else 0.0
 	smoke.amount_ratio = move_toward(smoke.amount_ratio, target_ratio, SMOKE_FADE_SPEED * delta)
+
+	# труба всегда снаружи, поэтому настоящий ветер (снос метели/бриз, см.
+	# snow_sync.wind_vector) сносит дым точно так же, как пар изо рта и пламя
+	# факела в руке (см. _update_breath_fog/_update_torch_walk_fx в new_script.gd)
+	if smoke_material and sync != null:
+		smoke_material.gravity = SMOKE_BASE_DRIFT + sync.wind_vector() * SMOKE_WIND_SCALE

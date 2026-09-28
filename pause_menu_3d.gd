@@ -13,6 +13,7 @@ const PANEL_H = 0.2
 const COLOR_IDLE = Color(0.05, 0.09, 0.14, 0.78)
 const COLOR_HOVER = Color(0.2, 0.42, 0.62, 0.9)
 const COLOR_INFO = Color(0.05, 0.09, 0.14, 0.55)
+const MUSIC_PLAYER_ENABLED = false   # плеер в меню паузы временно выключен - код не удалён, просто не создаётся
 
 var buttons = []              # {node, mat, half: Vector2, action: String, page: int}
 var all_panels = []            # {node, page} - вообще все панели, чтобы скрывать/показывать по страницам
@@ -75,11 +76,12 @@ func _ready():
 	_load_gfx_settings()
 
 	# страница 0 - главное меню паузы
-	_add_panel("–", Vector2(-0.4, 0.95), Vector2(0.2, PANEL_H), "music_vol_down", 0.16, 0)
-	music_volume_label = _add_panel("", Vector2(0, 0.95), Vector2(0.56, PANEL_H), "", 0.09, 0)
-	_add_panel("+", Vector2(0.4, 0.95), Vector2(0.2, PANEL_H), "music_vol_up", 0.16, 0)
-	music_label = _add_panel("", Vector2(-0.1, 0.68), Vector2(0.76, PANEL_H), "", 0.08, 0)
-	_add_panel(">>", Vector2(0.42, 0.68), Vector2(0.16, PANEL_H), "music_skip", 0.13, 0)
+	if MUSIC_PLAYER_ENABLED:
+		_add_panel("–", Vector2(-0.4, 0.95), Vector2(0.2, PANEL_H), "music_vol_down", 0.16, 0)
+		music_volume_label = _add_panel("", Vector2(0, 0.95), Vector2(0.56, PANEL_H), "", 0.09, 0)
+		_add_panel("+", Vector2(0.4, 0.95), Vector2(0.2, PANEL_H), "music_vol_up", 0.16, 0)
+		music_label = _add_panel("", Vector2(-0.1, 0.68), Vector2(0.76, PANEL_H), "", 0.08, 0)
+		_add_panel(">>", Vector2(0.42, 0.68), Vector2(0.16, PANEL_H), "music_skip", 0.13, 0)
 	_add_panel("ПАУЗА", Vector2(0, 0.42), Vector2(1.0, 0.16), "", 0.11, 0)
 	_add_panel("Продолжить", Vector2(0, 0.17), Vector2(1.0, PANEL_H), "resume", 0.09, 0)
 	_add_panel("–", Vector2(-0.4, -0.1), Vector2(0.2, PANEL_H), "vol_down", 0.16, 0)
@@ -91,7 +93,8 @@ func _ready():
 	_add_panel("В главное меню", Vector2(0, -1.18), Vector2(1.0, PANEL_H), "to_menu", 0.09, 0)
 	_add_panel("Выйти из игры", Vector2(0, -1.45), Vector2(1.0, PANEL_H), "quit", 0.09, 0)
 	_update_volume_text()
-	_update_music_volume_text()
+	if MUSIC_PLAYER_ENABLED:
+		_update_music_volume_text()
 	player.snow_sync.achievements_closed.connect(_on_achievements_closed)
 
 	# страница 1 - настройки графики (те же строки "минус / значение / плюс", что и громкость)
@@ -538,6 +541,8 @@ func _update_volume_text():
 	volume_label.text = "Громкость %d%%" % int(round(volume * 100.0))
 
 func _update_music_volume_text():
+	if not MUSIC_PLAYER_ENABLED or not music_volume_label:
+		return
 	music_volume_label.text = "Громкость музыки %d%%" % int(round(player.snow_sync.music_volume * 100.0))
 
 # --- настройки графики: WorldEnvironment один на сцену, поэтому берём его прямо

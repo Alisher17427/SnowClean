@@ -559,6 +559,36 @@ func _register_towers():
 			tower_timer[path] = TOWER_BREAK_TIME
 			tower_broken_time[path] = 0.0
 
+# дорога к вышке расчищена ещё до первого шага игрока - каждый клиент красит её
+# у себя локально (не через RPC), т.к. это не общее состояние, а детерминированная
+# стартовая раскладка - результат одинаков на всех компьютерах без синхронизации,
+# как и начальный узор снега из _value_noise/snow_depth_at
+const TOWER_ROAD_STEP = 2.0     # метр между точками кисти вдоль дороги
+const TOWER_ROAD_HALF_WIDTH = 2 # клеток по 1м в каждую сторону от центра (итого ~4-5м дороги)
+
+func _clear_tower_roads():
+	var spawn_node = get_tree().current_scene.get_node_or_null("PlayerSpawn")
+	if not spawn_node:
+		return
+	var spawn_pos = spawn_node.global_position
+	for t in get_tree().get_nodes_in_group("tower"):
+		var tower_node = t.get_parent() if t.get_parent() else t
+		_clear_road_line(spawn_pos, tower_node.global_position)
+
+func _clear_road_line(from: Vector3, to: Vector3):
+	var dist = from.distance_to(to)
+	if dist < 0.01:
+		return
+	var steps = max(1, int(ceil(dist / TOWER_ROAD_STEP)))
+	for i in range(steps + 1):
+		var p = from.lerp(to, float(i) / steps)
+		snow_mask.request_dig(p)
+		var gx = int(floor(p.x))
+		var gz = int(floor(p.z))
+		for dx in range(-TOWER_ROAD_HALF_WIDTH, TOWER_ROAD_HALF_WIDTH + 1):
+			for dz in range(-TOWER_ROAD_HALF_WIDTH, TOWER_ROAD_HALF_WIDTH + 1):
+				clear_grid[Vector2i(gx + dx, gz + dz)] = 1.0
+
 func _any_tower_overdue() -> bool:
 	for tower_path in tower_broken.keys():
 		if tower_broken[tower_path] and tower_broken_time.get(tower_path, 0.0) >= TOWER_BLIZZARD_GRACE:
@@ -614,6 +644,7 @@ func _ready():
 	add_child(wind_player)
 	_build_music()
 	_register_towers()
+	_clear_tower_roads()
 	_load_achievements()
 	_build_achievement_toast()
 	_build_achievements_screen()
@@ -646,7 +677,11 @@ func _build_music():
 # играть (один, хост или подключившись), а не пока висит в главном меню.
 # Начинаем почти с тишины - _update_music() сам плавно доведёт громкость до
 # MUSIC_VOLUME_DB (та же техника, что и переход в/из бури), а не врубает сразу
+const MUSIC_ENABLED = false   # музыка временно выключена - код и плеер в меню паузы не удалены, просто не запускаются
+
 func start_music():
+	if not MUSIC_ENABLED:
+		return
 	if music_player and not music_player.playing:
 		music_player.volume_db = -60.0
 		_play_next_track()
